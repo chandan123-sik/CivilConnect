@@ -4,9 +4,9 @@ import ProviderNavbar from './ProviderNavbar';
 
 const ProviderLayout = () => {
     return (
-        <div className="relative min-h-dvh bg-gray-50 flex flex-col max-w-md mx-auto shadow-sm border-x border-gray-100 pb-[68px]">
+        <div className="relative min-h-dvh bg-slate-50 flex flex-col max-w-md mx-auto shadow-sm border-x border-slate-100 pb-[100px]">
             {/* Page content */}
-            <div className="flex-1 w-full bg-white font-sans">
+            <div className="flex-1 w-full font-sans">
                 <Outlet />
             </div>
 

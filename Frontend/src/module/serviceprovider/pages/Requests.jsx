@@ -2,31 +2,34 @@ import React, { useState } from 'react';
 
 const ProviderRequests = () => {
     const [activeTab, setActiveTab] = useState('pending');
+    const [leads, setLeads] = useState([
+        { id: 1, type: '🏠 Residential', client: 'Amit Patel', loc: 'Pune', status: 'pending', service: 'Wall Painting (Full Flat)', desc: 'Need professional painting for a 3BHK apartment including ceiling work.', price: '₹12,400', date: 'Just now' },
+        { id: 2, type: '🏢 Commercial', client: 'Vikram Singh', loc: 'Mumbai', status: 'pending', service: 'Office Wiring Upgrade', desc: 'Rewiring of the main server room and installation of 12 new power points.', price: '₹45,000', date: '2h ago' },
+        { id: 3, type: '🏠 Residential', client: 'Sneha Rao', loc: 'Pune', status: 'accepted', service: 'Kitchen Renovation', desc: 'Complete modular kitchen setup with chimney installation.', price: '₹85,000', date: 'Yesterday' },
+    ]);
 
-    const requests = [
-        { id: 1, type: '🏠 Residential', client: 'Amit Patel', loc: 'Pune', status: 'pending', service: 'Wall Painting (Full Flat)', price: '₹12,400', date: 'Just now' },
-        { id: 2, type: '🏢 Commercial', client: 'Vikram Singh', loc: 'Mumbai', status: 'pending', service: 'Office Wiring Upgrade', price: '₹45,000', date: '2h ago' },
-        { id: 3, type: '🏠 Residential', client: 'Sneha Rao', loc: 'Pune', status: 'accepted', service: 'Kitchen Renovation', price: '₹85,000', date: 'Yesterday' },
-    ];
+    const handleAction = (id, newStatus) => {
+        setLeads(prev => prev.map(l => l.id === id ? { ...l, status: newStatus } : l));
+    };
 
-    const filtered = requests.filter(r => r.status === activeTab);
+    const filtered = leads.filter(r => r.status === activeTab);
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-24">
+        <div className="min-h-screen bg-[#F8FAFC] pb-10">
             {/* ── Fixed Header ── */}
-            <div className="bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 pt-14 pb-8 sticky top-0 z-30 space-y-6">
-                <div>
-                    <h1 className="text-2xl font-[1000] text-slate-900 tracking-tighter m-0">Project Leads</h1>
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Manage incoming inquiries</p>
+            <div className="bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-6 pt-12 pb-4 sticky top-0 z-50 rounded-b-[32px] shadow-lg">
+                <div className="pb-4">
+                    <h1 className="text-2xl font-[1000] text-white tracking-tight m-0">Project Requests</h1>
+                    <p className="text-blue-200/60 text-[11px] font-bold uppercase tracking-widest mt-0.5">Manage your incoming leads</p>
                 </div>
 
                 {/* Premium Tab Switcher */}
-                <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                <div className="flex bg-white/10 backdrop-blur-md p-1 rounded-xl border border-white/10 mb-2">
                     {['pending', 'accepted', 'rejected'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-3 px-2 rounded-[14px] text-xs font-black uppercase tracking-widest transition-all duration-300 ${activeTab === tab ? 'bg-white text-[#1E3A8A] shadow-md shadow-blue-900/5 ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`flex-1 py-2 px-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === tab ? 'bg-white text-[#1E3A8A] shadow-md' : 'text-white/60 hover:text-white'}`}
                         >
                             {tab}
                         </button>
@@ -35,47 +38,56 @@ const ProviderRequests = () => {
             </div>
 
             {/* ── Leads Content ── */}
-            <div className="p-6 space-y-5">
+            <div className="p-6 pt-1 space-y-5">
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 px-10 text-center">
-                        <div className="w-20 h-20 bg-slate-100 rounded-[40px] flex items-center justify-center text-4xl mb-6 shadow-inner">📭</div>
-                        <h3 className="text-slate-900 font-black text-lg">No {activeTab} leads</h3>
-                        <p className="text-slate-400 text-sm mt-2 leading-relaxed font-medium">When clients request your service, they will appear here.</p>
+                        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-inner border border-slate-100">📭</div>
+                        <h3 className="text-slate-900 font-extrabold text-[15px]">No {activeTab} leads</h3>
+                        <p className="text-slate-400 text-[11px] mt-2 font-medium">New requests will appear here once they are submitted by clients.</p>
                     </div>
                 ) : (
                     filtered.map(req => (
-                        <div key={req.id} className="bg-white border border-slate-100 rounded-[35px] p-7 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-500 relative overflow-hidden group">
-                            {/* Type Badge */}
-                            <div className="flex justify-between items-start mb-6">
-                                <span className="bg-slate-50 text-slate-500 text-[10px] font-black px-4 py-1.5 rounded-full border border-slate-100 uppercase tracking-widest">{req.type}</span>
-                                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{req.date}</p>
+                        <div key={req.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm transition-all duration-300 relative overflow-hidden group hover:shadow-md cursor-pointer active:scale-[0.98]">
+                            {/* Type & Date */}
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="bg-slate-50 text-slate-500 text-[9px] font-black px-3 py-1 rounded-full border border-slate-100 uppercase tracking-widest shadow-sm">{req.type}</span>
+                                <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">{req.date}</p>
                             </div>
 
-                            <div className="mb-8">
-                                <h3 className="text-slate-900 text-xl font-extrabold tracking-tight mb-1">{req.client}</h3>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" /> {req.loc} • {req.service}
+                            <div className="mb-6">
+                                <h3 className="text-slate-900 text-lg font-black tracking-tight mb-1">{req.client}</h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-3">
+                                    <span className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> {req.loc} • {req.service}
+                                </p>
+                                <p className="text-slate-500 text-[13px] font-medium leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-dashed border-slate-100">
+                                    {req.desc}
                                 </p>
                             </div>
 
-                            <div className="flex items-center justify-between border-t border-slate-50 pt-6">
+                            <div className="flex items-center justify-between border-t border-slate-50 pt-5">
                                 <div>
-                                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-none mb-1.5">Starting From</p>
+                                    <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1.5">Budget Est.</p>
                                     <p className="text-[#1E3A8A] text-xl font-black tracking-tight">{req.price}</p>
                                 </div>
 
                                 {activeTab === 'pending' ? (
-                                    <div className="flex gap-2">
-                                        <button className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20 active:scale-90 transition-all outline-none">
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
+                                    <div className="flex gap-2.5">
+                                        <button
+                                            onClick={() => handleAction(req.id, 'accepted')}
+                                            className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-green-500/20 active:scale-90 transition-all outline-none"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
                                         </button>
-                                        <button className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 border border-slate-100 active:scale-90 transition-all outline-none">
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        <button
+                                            onClick={() => handleAction(req.id, 'rejected')}
+                                            className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-red-500 border border-red-100 active:scale-90 transition-all outline-none hover:bg-red-100"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
                                     </div>
                                 ) : (
-                                    <button className="bg-[#1E3A8A] text-white px-8 py-3.5 rounded-2xl text-[13px] font-black shadow-lg shadow-blue-900/20 active:scale-95 transition-all outline-none">
-                                        Contact Client
+                                    <button className={`px-7 py-3.5 rounded-xl text-[12px] font-black uppercase tracking-widest shadow-md active:scale-95 transition-all outline-none ${activeTab === 'accepted' ? 'bg-[#1E3A8A] text-white shadow-blue-900/20 hover:shadow-lg' : 'bg-slate-100 text-slate-400 shadow-none border border-slate-100'}`}>
+                                        {activeTab === 'accepted' ? 'Contact Client' : 'Rejected'}
                                     </button>
                                 )}
                             </div>
