@@ -5,6 +5,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import GetStarted from './auth/GetStarted';
 import MobileInput from './auth/MobileInput';
 import OTPVerification from './auth/OTPVerification';
+import RoleSelection from './auth/RoleSelection';
+import CompleteProfile from './auth/CompleteProfile';
+import ProviderOnboardingPlans from './auth/ProviderOnboardingPlans';
+import CreateProfessionalProfile from './auth/CreateProfessionalProfile';
 
 // User Panel Pages
 import ClientLayout from './module/user/layout/ClientLayout';
@@ -38,6 +42,10 @@ function App() {
         <Route path="/" element={<GetStarted />} />
         <Route path="/auth/mobile-input" element={<MobileInput />} />
         <Route path="/auth/otp-verify" element={<OTPVerification />} />
+        <Route path="/auth/role-selection" element={<RoleSelection />} />
+        <Route path="/auth/complete-profile" element={<CompleteProfile />} />
+        <Route path="/auth/provider-plans" element={<ProviderOnboardingPlans />} />
+        <Route path="/auth/create-professional-profile" element={<CreateProfessionalProfile />} />
 
         {/* ── Client Panel Protected ── All nested under ClientLayout ── */}
         <Route path="/user" element={

@@ -33,14 +33,24 @@ const OTPVerification = () => {
 
     const handleEnter = () => {
         if (!isReady) return;
-        localStorage.setItem('client_mobile', `+91 ${mobile}`);
-        localStorage.setItem('client_name', 'John');
-        localStorage.setItem('client_city', 'Pune');
-        localStorage.setItem('profile_complete', 'true');
-        localStorage.setItem('access_token', 'dummy_user_token'); // For RequireAuth
 
-        // Direct to user panel
-        navigate('/user/home');
+        const existingRole = localStorage.getItem('role');
+        const isProfileComplete = localStorage.getItem('profile_complete') === 'true';
+
+        // Set dummy token for session
+        localStorage.setItem('access_token', existingRole === 'provider' ? 'dummy_provider_token' : 'dummy_user_token');
+
+        if (existingRole && isProfileComplete) {
+            // Already registered - go to respective panel
+            if (existingRole === 'provider') {
+                navigate('/serviceprovider/home');
+            } else {
+                navigate('/user/home');
+            }
+        } else {
+            // Brand new user or incomplete profile - start role selection
+            navigate('/auth/role-selection');
+        }
     };
 
     return (

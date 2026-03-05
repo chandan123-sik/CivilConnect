@@ -2,19 +2,73 @@ import React, { useState } from 'react';
 
 const ProviderProfile = () => {
     const [profile, setProfile] = useState({
-        name: 'Ramesh Sharma',
-        role: 'Main Civil Contractor',
-        exp: '12 Years',
+        name: localStorage.getItem('provider_name') || 'Ramesh Sharma',
+        role: localStorage.getItem('provider_category') || 'Main Civil Contractor',
+        exp: localStorage.getItem('provider_experience') || '12',
         loc: 'Pune, MH',
-        bio: 'Specializing in residential and industrial construction management. Delivering quality engineering since 2012.'
+        bio: localStorage.getItem('provider_about') || 'Specializing in residential and industrial construction management. Delivering quality engineering since 2012.',
+        pricing: localStorage.getItem('provider_pricing') || '₹800/Visit',
+        specialities: localStorage.getItem('provider_specialities') || 'Residential Const., RCC Work, Structural Design, Site Mgmt',
+        rating: localStorage.getItem('provider_rating') || '4.8',
+        hasPlan: !!localStorage.getItem('onboarding_plan_id')
     });
-    const [isEditBioOpen, setIsEditBioOpen] = useState(false);
-    const [tempBio, setTempBio] = useState(profile.bio);
 
-    const handleSaveBio = () => {
-        setProfile(prev => ({ ...prev, bio: tempBio }));
-        setIsEditBioOpen(false);
+    const [gallery, setGallery] = useState([
+        {
+            img: localStorage.getItem('provider_work_image') || 'https://images.unsplash.com/photo-1541913057-259c00b10288?w=400&h=400&fit=crop',
+            desc: localStorage.getItem('provider_work_desc') || 'Project Milestone 1'
+        },
+        {
+            img: 'https://images.unsplash.com/photo-1503387762-592dee58c460?w=400&h=400&fit=crop',
+            desc: 'Industrial Structure'
+        }
+    ]);
+
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [formData, setFormData] = useState({ ...profile });
+
+    // Add Work State
+    const [isAddWorkOpen, setIsAddWorkOpen] = useState(false);
+    const [newWorkImg, setNewWorkImg] = useState(null);
+    const [newWorkDesc, setNewWorkDesc] = useState('');
+
+    const handleInput = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
+
+    const handleSaveProfile = () => {
+        setProfile({ ...formData });
+        localStorage.setItem('provider_name', formData.name);
+        localStorage.setItem('provider_experience', formData.exp);
+        localStorage.setItem('provider_about', formData.bio);
+        localStorage.setItem('provider_pricing', formData.pricing);
+        localStorage.setItem('provider_specialities', formData.specialities);
+        localStorage.setItem('provider_rating', formData.rating);
+        setIsEditOpen(false);
+    };
+
+    const handleAddWorkImage = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewWorkImg(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSaveNewWork = () => {
+        if (newWorkImg && newWorkDesc) {
+            setGallery(prev => [{ img: newWorkImg, desc: newWorkDesc }, ...prev]);
+            setIsAddWorkOpen(false);
+            setNewWorkImg(null);
+            setNewWorkDesc('');
+        }
+    };
+
+    const specialtiesList = profile.specialities.split(',').filter(s => s.trim());
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-10">
@@ -24,8 +78,11 @@ const ProviderProfile = () => {
                     <h1 className="text-2xl font-[1000] text-white tracking-tight m-0">Expert Profile</h1>
                     <p className="text-blue-200/60 text-[11px] font-bold uppercase tracking-widest mt-0.5">Manage professional details</p>
                 </div>
-                <button className="bg-white/10 backdrop-blur-md text-white p-2.5 rounded-xl border border-white/20 shadow-sm active:scale-90 transition-transform">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <button
+                    onClick={() => { setFormData({ ...profile }); setIsEditOpen(true); }}
+                    className="bg-white/10 backdrop-blur-md text-white p-2.5 rounded-xl border border-white/20 shadow-sm active:scale-90 transition-transform"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                 </button>
             </div>
 
@@ -34,75 +91,74 @@ const ProviderProfile = () => {
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center">
                     <div className="relative mb-4">
                         <div className="w-24 h-24 rounded-[28px] bg-slate-100 border-2 border-white shadow-md overflow-hidden ring-4 ring-slate-50">
-                            <img src="https://ui-avatars.com/api/?name=Ramesh+Sharma&background=1E3A8A&color=fff&size=200" alt="Profile" className="w-full h-full object-cover" />
+                            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=1E3A8A&color=fff&size=200`} alt="Profile" className="w-full h-full object-cover" />
                         </div>
-                        <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-xl border-4 border-white flex items-center justify-center text-white shadow-lg">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                        </div>
+                        {profile.hasPlan && (
+                            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-xl border-4 border-white flex items-center justify-center text-white shadow-lg">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                        )}
                     </div>
 
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">{profile.name}</h2>
                     <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.2em] mt-1">{profile.role}</p>
 
                     <div className="mt-4 flex gap-2">
-                        <div className="bg-blue-50 text-[#1E3A8A] text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border border-blue-100 shadow-sm">Verified Expert</div>
+                        {profile.hasPlan && (
+                            <div className="bg-blue-50 text-[#1E3A8A] text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border border-blue-100 shadow-sm flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                                Verified Expert
+                            </div>
+                        )}
+                        <div className="bg-amber-50 text-amber-600 text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border border-amber-100 shadow-sm">⭐ {profile.rating} Rating</div>
                     </div>
                 </div>
 
                 {/* ── Info Stats Strip ── */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white rounded-xl p-4 border border-slate-100 text-center shadow-sm">
-                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5">Experience</p>
-                        <p className="text-slate-900 font-[1000] text-base">{profile.exp}</p>
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 opacity-60">Experience</p>
+                        <p className="text-slate-900 font-[1000] text-base">{profile.exp} Years</p>
                     </div>
                     <div className="bg-white rounded-xl p-4 border border-slate-100 text-center shadow-sm">
-                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5">Base Price</p>
-                        <p className="text-slate-900 font-[1000] text-base">₹800/Visit</p>
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 opacity-60">Base Price</p>
+                        <p className="text-slate-900 font-[1000] text-base">{profile.pricing}</p>
                     </div>
                 </div>
 
                 {/* ── Biography ── */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-slate-900 font-extrabold text-[15px]">Biography</h3>
-                        <button
-                            onClick={() => { setTempBio(profile.bio); setIsEditBioOpen(true); }}
-                            className="text-[#1E3A8A] text-[11px] font-black uppercase tracking-widest hover:underline"
-                        >
-                            Edit
-                        </button>
+                        <h3 className="text-slate-900 font-extrabold text-[15px]">Professional Bio</h3>
                     </div>
-                    <p className="text-slate-500 text-[14px] leading-relaxed font-medium">{profile.bio}</p>
+                    <p className="text-slate-500 text-[13.5px] leading-relaxed font-medium">{profile.bio}</p>
                 </div>
 
                 {/* ── Skills Section ── */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <h3 className="text-slate-900 font-extrabold text-[15px] mb-4">Core Skills</h3>
-                    <div className="flex flex-wrap gap-2.5">
-                        {['Residential Const.', 'RCC Work', 'Structural Design', 'Site Mgmt'].map(skill => (
-                            <span key={skill} className="bg-slate-50 text-slate-600 text-[10px] font-black px-3.5 py-2 rounded-xl border border-slate-100 shadow-sm uppercase tracking-tight">
-                                {skill}
+                    <h3 className="text-slate-900 font-extrabold text-[15px] mb-4">Core Specialities</h3>
+                    <div className="flex flex-wrap gap-2">
+                        {specialtiesList.map(skill => (
+                            <span key={skill} className="bg-[#F8FAFC] text-slate-600 text-[10px] font-black px-3.5 py-2.5 rounded-xl border-2 border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] uppercase tracking-tight">
+                                {skill.trim()}
                             </span>
                         ))}
-                        <button className="text-[#1E3A8A] text-[11px] font-black px-4 py-2 border border-blue-100 rounded-xl bg-blue-50/30 active:scale-95 transition-all">+ Add</button>
                     </div>
                 </div>
 
                 {/* ── Portfolio ── */}
                 <div>
                     <div className="flex justify-between items-center mb-4 px-1">
-                        <h3 className="text-slate-900 font-extrabold text-[15px]">Work Portfolio</h3>
-                        <button className="text-blue-600 font-black text-[11px] uppercase tracking-wider">+ Upload New</button>
+                        <h3 className="text-slate-900 font-extrabold text-[15px]">Recent Work Gallery</h3>
+                        <button onClick={() => setIsAddWorkOpen(true)} className="text-blue-600 font-black text-[11px] uppercase tracking-wider active:scale-95 transition-all p-1">+ Add New</button>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        {[
-                            'https://images.unsplash.com/photo-1541913057-259c00b10288?w=400&h=400&fit=crop',
-                            'https://images.unsplash.com/photo-1503387762-592dee58c460?w=400&h=400&fit=crop',
-                            'https://images.unsplash.com/photo-1517581177682-a085bb7ffb15?w=400&h=400&fit=crop',
-                            'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=400&h=400&fit=crop'
-                        ].map((img, i) => (
-                            <div key={i} className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200/50 shadow-sm group active:scale-[0.98] transition-all cursor-pointer">
-                                <img src={img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Work" />
+                        {gallery.map((item, idx) => (
+                            <div key={idx} className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200/50 shadow-sm group active:scale-[0.98] transition-all cursor-pointer relative">
+                                <img src={item.img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Work" />
+                                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                                    <p className="text-white text-[9px] font-[1000] uppercase tracking-widest line-clamp-2 leading-relaxed drop-shadow-md">{item.desc}</p>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -117,28 +173,164 @@ const ProviderProfile = () => {
                 </button>
             </div>
 
-            {/* ── Edit Bio Bottom Sheet ── */}
-            {isEditBioOpen && (
+            {/* ── Full Profile Edit Bottom Sheet ── */}
+            {isEditOpen && (
                 <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-md bg-white rounded-3xl p-7 shadow-2xl animate-in slide-in-from-bottom duration-300">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-slate-900 font-[1000] text-xl tracking-tight m-0">Edit Biography</h3>
-                            <button onClick={() => setIsEditBioOpen(false)} className="text-slate-400 p-2 hover:bg-slate-50 rounded-full active:scale-90 transition-transform">
+                    <div className="w-full max-w-md bg-white rounded-[40px] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-8">
+                            <div>
+                                <h3 className="text-slate-900 font-[1000] text-xl tracking-tight m-0">Edit Professional Bio</h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Keep your info up to date</p>
+                            </div>
+                            <button onClick={() => setIsEditOpen(false)} className="text-slate-400 p-2 hover:bg-slate-50 rounded-full active:scale-90 transition-transform">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
-                        <textarea
-                            className="w-full h-40 bg-slate-50 border border-slate-100 rounded-2xl p-5 text-slate-700 text-[15px] focus:outline-none focus:ring-4 focus:ring-blue-500/10 mb-6 font-medium leading-relaxed resize-none transition-all"
-                            value={tempBio}
-                            onChange={(e) => setTempBio(e.target.value)}
-                            placeholder="Write about your professional background, past projects, and expertise..."
-                        />
-                        <button
-                            onClick={handleSaveBio}
-                            className="w-full py-4.5 bg-[#1E3A8A] text-white rounded-xl text-[14px] font-[1000] uppercase tracking-widest shadow-xl shadow-blue-900/20 active:scale-95 transition-all"
-                        >
-                            Save Biography
-                        </button>
+
+                        <div className="space-y-6">
+                            <div>
+                                <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Expert Name</label>
+                                <input
+                                    type="text" name="name" value={formData.name} onChange={handleInput}
+                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A]"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="col-span-1">
+                                    <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Exp (Yrs)</label>
+                                    <input
+                                        type="number" name="exp" value={formData.exp} onChange={handleInput}
+                                        className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A]"
+                                    />
+                                </div>
+                                <div className="col-span-1">
+                                    <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Price</label>
+                                    <input
+                                        type="text" name="pricing" value={formData.pricing} onChange={handleInput}
+                                        className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A]"
+                                    />
+                                </div>
+                                <div className="col-span-1">
+                                    <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Rating</label>
+                                    <input
+                                        type="text" name="rating" value={formData.rating} onChange={handleInput}
+                                        className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">About Bio</label>
+                                <textarea
+                                    name="bio" value={formData.bio} onChange={handleInput}
+                                    className="w-full h-32 border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A] resize-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Manage Specialities</label>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {formData.specialities.split(',').filter(s => s.trim()).map((skill, idx) => (
+                                        <span key={idx} className="bg-slate-50 text-slate-600 text-[10px] font-black px-3.5 py-2 rounded-xl border-2 border-slate-100 uppercase tracking-tight flex items-center gap-1.5 shadow-sm">
+                                            {skill.trim()}
+                                            <button onClick={() => {
+                                                const newSpecs = formData.specialities.split(',').filter(s => s.trim()).filter((_, i) => i !== idx).join(', ');
+                                                setFormData(prev => ({ ...prev, specialities: newSpecs }));
+                                            }} className="text-slate-400 hover:text-red-500 bg-white rounded-full w-4 h-4 flex flex-col items-center justify-center -mr-1 shadow-sm leading-none pt-0.5 ml-1">×</button>
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text" id="newSpeciality" placeholder="Type and hit Add..."
+                                        className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A]"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                const val = e.target.value.trim();
+                                                if (val) {
+                                                    const current = formData.specialities.split(',').filter(s => s.trim());
+                                                    current.push(val);
+                                                    setFormData(prev => ({ ...prev, specialities: current.join(', ') }));
+                                                    e.target.value = '';
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        onClick={(e) => {
+                                            const input = document.getElementById('newSpeciality');
+                                            const val = input.value.trim();
+                                            if (val) {
+                                                const current = formData.specialities.split(',').filter(s => s.trim());
+                                                current.push(val);
+                                                setFormData(prev => ({ ...prev, specialities: current.join(', ') }));
+                                                input.value = '';
+                                            }
+                                        }}
+                                        className="bg-[#1E3A8A] text-white px-6 rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-lg"
+                                    >Add</button>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleSaveProfile}
+                                className="w-full py-5 bg-[#1E3A8A] text-white rounded-2xl text-[12px] font-[1000] uppercase tracking-[0.2em] shadow-xl shadow-blue-900/20 active:scale-95 transition-all mt-4"
+                            >
+                                Save Professional Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Add New Work Bottom Sheet ── */}
+            {isAddWorkOpen && (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-md bg-white rounded-[40px] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300">
+                        <div className="flex justify-between items-center mb-8">
+                            <div>
+                                <h3 className="text-slate-900 font-[1000] text-xl tracking-tight m-0">Add Custom Work</h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Upload to your gallery</p>
+                            </div>
+                            <button onClick={() => setIsAddWorkOpen(false)} className="text-slate-400 p-2 hover:bg-slate-50 rounded-full active:scale-90 transition-transform">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="relative group">
+                                <div className="w-full h-44 rounded-[32px] bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all duration-300 focus-within:border-[#1E3A8A]">
+                                    {newWorkImg ? (
+                                        <img src={newWorkImg} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="text-center">
+                                            <div className="text-3xl mb-2">📸</div>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight">Tap to Upload Image</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleAddWorkImage} />
+                            </div>
+
+                            <div>
+                                <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Project Milestone Name</label>
+                                <input
+                                    type="text" value={newWorkDesc} onChange={(e) => setNewWorkDesc(e.target.value)}
+                                    placeholder="e.g. Dream Home Renovation"
+                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A]"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleSaveNewWork}
+                                disabled={!newWorkImg || !newWorkDesc}
+                                className="w-full py-5 bg-[#1E3A8A] text-white rounded-2xl text-[12px] font-[1000] uppercase tracking-[0.2em] shadow-xl shadow-blue-900/20 active:scale-95 transition-all mt-4 disabled:opacity-50 disabled:active:scale-100"
+                            >
+                                Upload to Gallery
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

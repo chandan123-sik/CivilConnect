@@ -3,8 +3,12 @@ import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
     const navigate = useNavigate();
-    const [clientName, setClientName] = useState(localStorage.getItem('client_name') || 'Guest User');
-    const [clientCity, setClientCity] = useState(localStorage.getItem('client_city') || 'Pune');
+    const [clientName, setClientName] = useState(localStorage.getItem('user_name') || 'Guest User');
+    const [clientCity, setClientCity] = useState(localStorage.getItem('user_city') || 'Pune');
+    const [clientEmail, setClientEmail] = useState(localStorage.getItem('user_email') || '');
+    const [clientArea, setClientArea] = useState(localStorage.getItem('user_area') || '');
+    const [clientGender, setClientGender] = useState(localStorage.getItem('user_gender') || '');
+
     const [showEdit, setShowEdit] = useState(false);
     const [showPolicy, setShowPolicy] = useState(false);
     const [showRate, setShowRate] = useState(false);
@@ -17,8 +21,11 @@ const Profile = () => {
 
     const handleSaveProfile = (e) => {
         e.preventDefault();
-        localStorage.setItem('client_name', clientName);
-        localStorage.setItem('client_city', clientCity);
+        localStorage.setItem('user_name', clientName);
+        localStorage.setItem('user_city', clientCity);
+        localStorage.setItem('user_email', clientEmail);
+        localStorage.setItem('user_area', clientArea);
+        localStorage.setItem('user_gender', clientGender);
         setShowEdit(false);
     };
 
@@ -73,7 +80,7 @@ const Profile = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span style={{ fontSize: '12px' }}>📍</span>
                             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#6B7280', fontWeight: '500' }}>
-                                {clientCity}, India
+                                {clientArea ? `${clientArea}, ` : ''}{clientCity}, India
                             </span>
                         </div>
                     </div>
@@ -197,28 +204,64 @@ const Profile = () => {
             {/* Edit Profile Modal */}
             {showEdit && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }}>
-                    <div style={{ background: '#fff', width: '100%', borderRadius: '32px 32px 0 0', padding: '32px 24px', animation: 'slideUp 0.3s ease-out' }}>
+                    <div style={{ background: '#fff', width: '100%', borderRadius: '32px 32px 0 0', padding: '32px 24px', animation: 'slideUp 0.3s ease-out', maxHeight: '90dvh', overflowY: 'auto' }}>
                         <div style={{ width: '40px', height: '4px', background: '#E5E7EB', borderRadius: '2px', margin: '0 auto 24px' }} />
                         <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: '800', color: '#111827', marginBottom: 20 }}>Edit Profile</h3>
                         <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                             <div>
-                                <label style={{ fontSize: '12px', fontWeight: '700', color: '#6B7280', display: 'block', marginBottom: 8 }}>Full Name</label>
+                                <label style={{ fontSize: '11px', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase', tracking: '0.1em', display: 'block', marginBottom: 8 }}>Full Name</label>
                                 <input
                                     type="text" value={clientName} onChange={(e) => setClientName(e.target.value)}
-                                    style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1px solid #E5E7EB', outline: 'none', fontFamily: "'Inter', sans-serif" }}
+                                    style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1px solid #E5E7EB', outline: 'none', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '600' }}
                                 />
                             </div>
                             <div>
-                                <label style={{ fontSize: '12px', fontWeight: '700', color: '#6B7280', display: 'block', marginBottom: 8 }}>City</label>
+                                <label style={{ fontSize: '11px', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase', tracking: '0.1em', display: 'block', marginBottom: 8 }}>Email Address</label>
                                 <input
-                                    type="text" value={clientCity} onChange={(e) => setClientCity(e.target.value)}
-                                    style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1px solid #E5E7EB', outline: 'none', fontFamily: "'Inter', sans-serif" }}
+                                    type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)}
+                                    style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1px solid #E5E7EB', outline: 'none', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '600' }}
                                 />
                             </div>
-                            <button type="submit" style={{ marginTop: 10, width: '100%', padding: '16px', borderRadius: '14px', background: '#7C3AED', color: '#fff', border: 'none', fontWeight: '800', cursor: 'pointer' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                <div>
+                                    <label style={{ fontSize: '11px', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase', tracking: '0.1em', display: 'block', marginBottom: 8 }}>City</label>
+                                    <input
+                                        type="text" value={clientCity} onChange={(e) => setClientCity(e.target.value)}
+                                        style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1px solid #E5E7EB', outline: 'none', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '600' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '11px', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase', tracking: '0.1em', display: 'block', marginBottom: 8 }}>Area</label>
+                                    <input
+                                        type="text" value={clientArea} onChange={(e) => setClientArea(e.target.value)}
+                                        style={{ width: '100%', padding: '14px 18px', borderRadius: '12px', border: '1px solid #E5E7EB', outline: 'none', fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '600' }}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ fontSize: '11px', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase', tracking: '0.1em', display: 'block', marginBottom: 8 }}>Gender</label>
+                                <div style={{ display: 'flex', gap: 10 }}>
+                                    {['Male', 'Female', 'Other'].map(g => (
+                                        <button
+                                            key={g} type="button"
+                                            onClick={() => setClientGender(g)}
+                                            style={{
+                                                flex: 1, padding: '12px', borderRadius: '10px', border: '1.5px solid',
+                                                borderColor: clientGender === g ? '#7C3AED' : '#E5E7EB',
+                                                background: clientGender === g ? '#F5F3FF' : '#fff',
+                                                color: clientGender === g ? '#7C3AED' : '#6B7280',
+                                                fontSize: '12px', fontWeight: '700', transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {g}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <button type="submit" style={{ marginTop: 10, width: '100%', padding: '16px', borderRadius: '14px', background: '#7C3AED', color: '#fff', border: 'none', fontWeight: '800', cursor: 'pointer', boxShadow: '0 10px 20px rgba(124, 58, 237, 0.2)' }}>
                                 Save Changes
                             </button>
-                            <button type="button" onClick={() => setShowEdit(false)} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: '#6B7280', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
+                            <button type="button" onClick={() => setShowEdit(false)} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: '#9CA3AF', fontWeight: '800', fontSize: '13px', cursor: 'pointer', textTransform: 'uppercase' }}>Cancel</button>
                         </form>
                     </div>
                 </div>

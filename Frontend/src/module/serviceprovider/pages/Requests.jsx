@@ -38,7 +38,7 @@ const ProviderRequests = () => {
             </div>
 
             {/* ── Leads Content ── */}
-            <div className="p-6 pt-1 space-y-5">
+            <div className="p-6 pt-6 space-y-5">
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 px-10 text-center">
                         <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-3xl mb-4 shadow-inner border border-slate-100">📭</div>
@@ -47,7 +47,7 @@ const ProviderRequests = () => {
                     </div>
                 ) : (
                     filtered.map(req => (
-                        <div key={req.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm transition-all duration-300 relative overflow-hidden group hover:shadow-md cursor-pointer active:scale-[0.98]">
+                        <div key={req.id} className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm transition-all duration-300 relative overflow-hidden group hover:shadow-md cursor-pointer active:scale-[0.98]">
                             {/* Type & Date */}
                             <div className="flex justify-between items-start mb-4">
                                 <span className="bg-slate-50 text-slate-500 text-[9px] font-black px-3 py-1 rounded-full border border-slate-100 uppercase tracking-widest shadow-sm">{req.type}</span>
@@ -71,18 +71,18 @@ const ProviderRequests = () => {
                                 </div>
 
                                 {activeTab === 'pending' ? (
-                                    <div className="flex gap-2.5">
-                                        <button
-                                            onClick={() => handleAction(req.id, 'accepted')}
-                                            className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-green-500/20 active:scale-90 transition-all outline-none"
-                                        >
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                                        </button>
+                                    <div className="flex gap-2">
                                         <button
                                             onClick={() => handleAction(req.id, 'rejected')}
-                                            className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-red-500 border border-red-100 active:scale-90 transition-all outline-none hover:bg-red-100"
+                                            className="px-5 py-3 bg-red-50 text-red-500 rounded-xl text-[11px] font-black uppercase tracking-widest border border-red-100 active:scale-95 transition-all outline-none hover:bg-red-100"
                                         >
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                            Reject
+                                        </button>
+                                        <button
+                                            onClick={() => handleAction(req.id, 'accepted')}
+                                            className="px-6 py-3 bg-[#1E3A8A] text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95 transition-all outline-none hover:bg-indigo-800"
+                                        >
+                                            Accept
                                         </button>
                                     </div>
                                 ) : (
