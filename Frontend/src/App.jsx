@@ -10,6 +10,24 @@ import CompleteProfile from './auth/CompleteProfile';
 import ProviderOnboardingPlans from './auth/ProviderOnboardingPlans';
 import CreateProfessionalProfile from './auth/CreateProfessionalProfile';
 
+// Admin Panel Pages
+import AdminLogin from './module/admin/auth/AdminLogin';
+import AdminLayout from './module/admin/layout/AdminLayout';
+import AdminDashboard from './module/admin/pages/AdminDashboard';
+import ApprovalManagement from './module/admin/pages/ApprovalManagement';
+import UserManagement from './module/admin/pages/UserManagement';
+import ProviderManagement from './module/admin/pages/ProviderManagement';
+import CategoryManagement from './module/admin/pages/CategoryManagement';
+import RequestMonitor from './module/admin/pages/RequestMonitor';
+import DisputeCenter from './module/admin/pages/DisputeCenter';
+import SubscriptionPlans from './module/admin/pages/SubscriptionPlans';
+import RevenueDashboard from './module/admin/pages/RevenueDashboard';
+import MaterialsCatalog from './module/admin/pages/MaterialsCatalog';
+import AdminSettings from './module/admin/pages/AdminSettings';
+
+// Clean out unused legacy imports mapping to prior names
+// (ProviderManagement, CategoryManagement etc are replaced by these unified ones)
+
 // User Panel Pages
 import ClientLayout from './module/user/layout/ClientLayout';
 import Home from './module/user/pages/Home';
@@ -38,6 +56,23 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* ── Admin Auth & Dashboard ── */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<AdminLayout />}>
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<AdminDashboard />} />
+          <Route path="approvals" element={<ApprovalManagement />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="providers" element={<ProviderManagement />} />
+          <Route path="categories" element={<CategoryManagement />} />
+          <Route path="requests" element={<RequestMonitor />} />
+          <Route path="disputes" element={<DisputeCenter />} />
+          <Route path="subscriptions" element={<SubscriptionPlans />} />
+          <Route path="revenue" element={<RevenueDashboard />} />
+          <Route path="materials" element={<MaterialsCatalog />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
+
         {/* ── Auth Flow ── */}
         <Route path="/" element={<GetStarted />} />
         <Route path="/auth/mobile-input" element={<MobileInput />} />
