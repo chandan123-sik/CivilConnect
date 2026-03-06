@@ -170,7 +170,7 @@ const CompleteProfile = () => {
                         <div className="pt-6">
                             <button
                                 onClick={handleSubmit}
-                                className="w-full bg-[#7C3AED] text-white py-5 rounded-[24px] text-sm font-[1000] tracking-[0.1em] shadow-2xl shadow-purple-900/30 active:scale-95 transition-all outline-none"
+                                className="w-full bg-[#7C3AED] text-white py-5 rounded-[24px] text-sm font-[1000] uppercase tracking-[0.3em] shadow-2xl shadow-purple-900/30 active:scale-95 transition-all outline-none"
                             >
                                 Complete registration
                             </button>

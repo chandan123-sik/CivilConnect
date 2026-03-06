@@ -71,7 +71,7 @@ const RoleSelection = () => {
                         👋
                     </div>
                     <h2 className="text-2xl font-[1000] text-slate-900 tracking-tight mb-2">Welcome!</h2>
-                    <p className="text-slate-600 text-xs font-bold uppercase tracking-widest leading-relaxed">
+                    <p className="text-slate-600 text-[13px] font-bold uppercase tracking-widest leading-relaxed">
                         How would you like to use CivilConnect?
                     </p>
                 </div>
@@ -87,8 +87,8 @@ const RoleSelection = () => {
                                 🏠
                             </div>
                             <div>
-                                <h3 className="text-slate-900 font-black text-sm uppercase tracking-wider mb-0.5">I am a User</h3>
-                                <p className="text-slate-600 text-[10px] font-bold">I want to hire professionals</p>
+                                <h3 className="text-slate-900 font-black text-base uppercase tracking-wider mb-0.5">I am a User</h3>
+                                <p className="text-slate-600 text-[12px] font-bold">I want to hire professionals</p>
                             </div>
                         </div>
                     </button>
@@ -103,8 +103,8 @@ const RoleSelection = () => {
                                 🛠️
                             </div>
                             <div>
-                                <h3 className="text-slate-900 font-black text-sm uppercase tracking-wider mb-0.5">Service Provider</h3>
-                                <p className="text-slate-600 text-[10px] font-bold">I want to offer my services</p>
+                                <h3 className="text-slate-900 font-black text-base uppercase tracking-wider mb-0.5">Service Provider</h3>
+                                <p className="text-slate-600 text-[12px] font-bold">I want to offer my services</p>
                             </div>
                         </div>
                     </button>
@@ -136,7 +136,7 @@ const RoleSelection = () => {
                 )}
 
                 <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Select an option to proceed</p>
+                    <p className="text-[12px] text-slate-500 font-[1000] uppercase tracking-widest">Select an option to proceed</p>
                 </div>
             </div>
         </div>

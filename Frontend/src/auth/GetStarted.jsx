@@ -54,7 +54,7 @@ const GetStarted = () => {
 
             {/* Central Circle Image Slider - MOVED UP */}
             <div className="relative w-full flex justify-center mb-6">
-                <div key={currentSlide} className="w-64 h-64 rounded-full overflow-hidden border-[6px] border-purple-50 shadow-2xl img-animate z-10">
+                <div key={currentSlide} className="w-64 h-64 rounded-full overflow-hidden border-[6px] border-[#7C3AED]/10 shadow-2xl img-animate z-10">
                     <img
                         key={slides[currentSlide].img}
                         src={slides[currentSlide].img}
@@ -93,11 +93,11 @@ const GetStarted = () => {
             <div className="w-full mt-auto pb-10">
                 <button
                     onClick={() => navigate('/auth/mobile-input')}
-                    className="w-full bg-[#7C3AED] text-white py-5 rounded-[24px] text-xs font-[1000] uppercase tracking-[0.3em] shadow-2xl shadow-purple-900/30 active:scale-95 transition-all outline-none"
+                    className="w-full bg-[#7C3AED] text-white py-5 rounded-[24px] text-sm font-[1000] uppercase tracking-[0.3em] shadow-2xl shadow-purple-900/30 active:scale-95 transition-all outline-none"
                 >
                     Get Started
                 </button>
-                <p className="text-center text-slate-500 text-[9px] font-black uppercase tracking-widest mt-6">
+                <p className="text-center text-slate-500 text-[11px] font-[1000] uppercase tracking-widest mt-6 pb-2">
                     Premium Civil Construction Network
                 </p>
             </div>
