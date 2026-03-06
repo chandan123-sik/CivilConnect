@@ -59,7 +59,7 @@ const ProviderNavbar = () => {
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-400 ${active ? 'bg-[#1E3A8A] text-white shadow-lg shadow-blue-900/10 scale-110' : 'bg-transparent text-slate-300 group-hover:text-slate-400'}`}>
                             {tab.icon(active)}
                         </div>
-                        <span className={`text-[10px] font-black mt-1 transition-colors duration-400 uppercase tracking-tighter ${active ? 'text-[#1E3A8A]' : 'text-slate-400'}`}>
+                        <span className={`text-[12px] font-black mt-1.5 transition-colors duration-400 uppercase tracking-tighter ${active ? 'text-[#1E3A8A]' : 'text-slate-400'}`}>
                             {tab.label}
                         </span>
                     </NavLink>

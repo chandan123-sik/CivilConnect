@@ -97,76 +97,76 @@ const CreateProfessionalProfile = () => {
                     <div className="space-y-4 w-full">
                         {/* Name Input */}
                         <div>
-                            <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">Professional Full Name</label>
+                            <label className="text-slate-700 text-[15px] font-bold block mb-1.5 px-1">Professional Full Name</label>
                             <input
                                 type="text"
                                 name="fullName"
                                 value={formData.fullName}
                                 onChange={handleInput}
                                 placeholder="Enter your business name"
-                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-500 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
+                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
                             />
                         </div>
 
                         {/* Experience, Price, and Rating */}
                         <div className="grid grid-cols-3 gap-3">
                             <div>
-                                <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">Exp (Y)</label>
+                                <label className="text-slate-700 text-[15px] font-bold block mb-1.5 px-1">Exp (Y)</label>
                                 <input
                                     type="number"
                                     name="experience"
                                     value={formData.experience}
                                     onChange={handleInput}
                                     placeholder="e.g. 5"
-                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-500 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
+                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
                                 />
                             </div>
                             <div>
-                                <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">Price</label>
+                                <label className="text-slate-700 text-[15px] font-bold block mb-1.5 px-1">Price</label>
                                 <input
                                     type="text"
                                     name="pricing"
                                     value={formData.pricing}
                                     onChange={handleInput}
                                     placeholder="₹500/hr"
-                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-500 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
+                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
                                 />
                             </div>
                             <div>
-                                <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">Rating</label>
+                                <label className="text-slate-700 text-[15px] font-bold block mb-1.5 px-1">Rating</label>
                                 <input
                                     type="text"
                                     name="rating"
                                     value={formData.rating}
                                     onChange={handleInput}
                                     placeholder="4.9"
-                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-500 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
+                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
                                 />
                             </div>
                         </div>
 
                         {/* About */}
                         <div>
-                            <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">About Your Services</label>
+                            <label className="text-slate-700 text-[15px] font-bold block mb-1.5 px-1">About Your Services</label>
                             <textarea
                                 name="about"
                                 value={formData.about}
                                 onChange={handleInput}
                                 placeholder="Tell clients why they should hire you..."
-                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-500 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm min-h-[100px] resize-none"
+                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm min-h-[100px] resize-none"
                             />
                         </div>
 
                         {/* Specialities */}
                         <div>
-                            <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">Specialities</label>
+                            <label className="text-slate-700 text-[15px] font-bold block mb-1.5 px-1">Specialities</label>
                             <input
                                 type="text"
                                 name="specialities"
                                 value={formData.specialities}
                                 onChange={handleInput}
                                 placeholder="e.g. Interior, Ceiling, Industrial (comma separated)"
-                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-500 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
+                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
                             />
                         </div>
 
@@ -206,7 +206,7 @@ const CreateProfessionalProfile = () => {
                         <div className="pt-6">
                             <button
                                 onClick={handleSubmit}
-                                className="w-full bg-[#1E3A8A] text-white py-5 rounded-[18px] text-sm font-[1000] tracking-[0.1em] shadow-2xl shadow-blue-900/30 active:scale-95 transition-all outline-none"
+                                className="w-full bg-[#1E3A8A] text-white py-5 rounded-[18px] text-base font-[1000] tracking-[0.1em] shadow-2xl shadow-blue-900/30 active:scale-95 transition-all outline-none"
                             >
                                 Complete business bio
                             </button>

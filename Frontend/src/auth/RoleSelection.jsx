@@ -112,13 +112,13 @@ const RoleSelection = () => {
                     {/* Category Selection for Provider */}
                     {selectedRole === 'provider' && (
                         <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <label className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Choose Category</label>
+                            <label className="text-slate-600 text-[13px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Choose Category</label>
                             <input
                                 type="text"
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
                                 placeholder="e.g. Contractor, Painter, Plumber"
-                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all"
+                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all"
                             />
                         </div>
                     )}

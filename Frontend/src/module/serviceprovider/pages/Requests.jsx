@@ -20,7 +20,7 @@ const ProviderRequests = () => {
             <div className="bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-6 pt-8 pb-4 sticky top-0 z-50 rounded-b-[32px] shadow-lg">
                 <div className="pb-4">
                     <h1 className="text-2xl font-[1000] text-white tracking-tight m-0">Project Requests</h1>
-                    <p className="text-blue-200/60 text-[11px] font-bold uppercase tracking-widest mt-0.5">Manage your incoming leads</p>
+                    <p className="text-blue-200/60 text-[13px] font-bold uppercase tracking-widest mt-0.5">Manage your incoming leads</p>
                 </div>
 
                 {/* Premium Tab Switcher */}
@@ -29,7 +29,7 @@ const ProviderRequests = () => {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`flex-1 py-2 px-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === tab ? 'bg-white text-[#1E3A8A] shadow-md' : 'text-white/60 hover:text-white'}`}
+                            className={`flex-1 py-2 px-2 rounded-lg text-[12px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === tab ? 'bg-white text-[#1E3A8A] shadow-md' : 'text-white/60 hover:text-white'}`}
                         >
                             {tab}
                         </button>
@@ -50,37 +50,37 @@ const ProviderRequests = () => {
                         <div key={req.id} className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm transition-all duration-300 relative overflow-hidden group hover:shadow-md cursor-pointer active:scale-[0.98]">
                             {/* Type & Date */}
                             <div className="flex justify-between items-start mb-4">
-                                <span className="bg-slate-50 text-slate-500 text-[9px] font-black px-3 py-1 rounded-full border border-slate-100 uppercase tracking-widest shadow-sm">{req.type}</span>
-                                <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">{req.date}</p>
+                                <span className="bg-slate-50 text-slate-500 text-[12px] font-black px-3 py-1 rounded-full border border-slate-100 uppercase tracking-widest shadow-sm">{req.type}</span>
+                                <p className="text-slate-400 text-[12px] font-black uppercase tracking-widest">{req.date}</p>
                             </div>
 
                             <div className="mb-6">
                                 <h3 className="text-slate-900 text-lg font-black tracking-tight mb-1">{req.client}</h3>
-                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-3">
-                                    <span className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> {req.loc} • {req.service}
+                                <p className="text-slate-400 text-[14px] font-black uppercase tracking-widest flex items-center gap-2 mb-3">
+                                    <span className="w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> {req.loc} • {req.service}
                                 </p>
-                                <p className="text-slate-500 text-[13px] font-medium leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-dashed border-slate-100">
+                                <p className="text-slate-600 text-[15px] font-medium leading-relaxed bg-slate-50/50 p-4 rounded-xl border border-dashed border-slate-100">
                                     {req.desc}
                                 </p>
                             </div>
 
                             <div className="flex items-center justify-between border-t border-slate-50 pt-5">
                                 <div>
-                                    <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1.5">Budget Est.</p>
-                                    <p className="text-[#1E3A8A] text-xl font-black tracking-tight">{req.price}</p>
+                                    <p className="text-slate-400 text-[12px] font-black uppercase tracking-widest mb-1.5">Budget Est.</p>
+                                    <p className="text-[#1E3A8A] text-2xl font-black tracking-tight">{req.price}</p>
                                 </div>
 
                                 {activeTab === 'pending' ? (
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => handleAction(req.id, 'rejected')}
-                                            className="px-5 py-3 bg-red-50 text-red-500 rounded-xl text-[11px] font-black uppercase tracking-widest border border-red-100 active:scale-95 transition-all outline-none hover:bg-red-100"
+                                            className="px-5 py-3 bg-red-50 text-red-500 rounded-xl text-[13px] font-black uppercase tracking-widest border border-red-100 active:scale-95 transition-all outline-none hover:bg-red-100"
                                         >
                                             Reject
                                         </button>
                                         <button
                                             onClick={() => handleAction(req.id, 'accepted')}
-                                            className="px-6 py-3 bg-[#1E3A8A] text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95 transition-all outline-none hover:bg-indigo-800"
+                                            className="px-6 py-3 bg-[#1E3A8A] text-white rounded-xl text-[13px] font-black uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95 transition-all outline-none hover:bg-indigo-800"
                                         >
                                             Accept
                                         </button>
