@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Search, ClipboardList, CheckCircle } from 'lucide-react';
 import { mockCategories, mockProviders } from '../mockData';
 
 const Home = () => {
@@ -84,7 +85,7 @@ const Home = () => {
             </header>
 
             {/* Horizontal Promo Banners */}
-            <div style={{ position: 'relative', marginBottom: 20 }}>
+            <div style={{ position: 'relative', marginBottom: 0 }}>
                 <div
                     ref={bannerRef}
                     onScroll={handleScroll}
@@ -142,7 +143,7 @@ const Home = () => {
             </div>
 
             {/* Horizontal Categories Scroll */}
-            <section style={{ padding: '20px 0 0' }}>
+            <section style={{ padding: '0 0 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 10 }}>
                     <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
                         Categories
@@ -161,17 +162,18 @@ const Home = () => {
                     overflowX: 'auto',
                     padding: '2px 20px 10px',
                     scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
+                    msOverflowStyle: 'none',
+                    scrollSnapType: 'x mandatory'
                 }} className="hide-scrollbar">
                     {mockCategories.map(cat => (
                         <div
                             key={cat.id}
                             onClick={() => navigate(`/user/categories/${cat.id}`)}
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 }}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, minWidth: '78px', scrollSnapAlign: 'start' }}
                         >
                             <div style={{
-                                width: '68px',
-                                height: '68px',
+                                width: '64px',
+                                height: '64px',
                                 background: '#fff',
                                 borderRadius: '50%',
                                 display: 'flex',
@@ -186,7 +188,7 @@ const Home = () => {
                             >
                                 {cat.icon}
                             </div>
-                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', fontWeight: '600', color: '#4B5563', textAlign: 'center', width: '68px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', color: '#1F2937', textAlign: 'center', width: '74px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {cat.label}
                             </span>
                         </div>
@@ -215,25 +217,29 @@ const Home = () => {
                             key={provider.id}
                             onClick={() => navigate(`/user/provider/${provider.id}`)}
                             style={{
-                                minWidth: '150px',
+                                minWidth: '160px',
                                 background: '#fff',
-                                borderRadius: '16px',
-                                padding: '14px',
-                                boxShadow: '0 6px 15px rgba(124, 58, 237, 0.06)',
+                                borderRadius: '20px',
+                                padding: '18px',
+                                boxShadow: '0 8px 20px rgba(124, 58, 237, 0.06)',
                                 border: '1px solid rgba(124, 58, 237, 0.04)',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                textAlign: 'center'
                             }}
                         >
                             <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F5F3FF', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', overflow: 'hidden' }}>
                                 {provider.avatar ? <img src={provider.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : provider.categoryId === 'contractor' ? '🏗️' : '👤'}
                             </div>
-                            <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: '700', color: '#1F2937', margin: '0 0 2px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '800', color: '#1F2937', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {provider.name}
                             </h4>
-                            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#6B7280', margin: '0 0 10px 0' }}>{provider.role}</p>
+                            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#6B7280', margin: '0 0 12px 0', fontWeight: '500' }}>{provider.role}</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <span style={{ fontSize: '12px' }}>⭐</span>
-                                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', fontWeight: '700', color: '#1F2937' }}>{provider.rating || '4.5'}</span>
+                                <span style={{ fontSize: '14px' }}>⭐</span>
+                                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', color: '#1F2937' }}>{provider.rating || '4.5'}</span>
                             </div>
                         </div>
                     ))}
@@ -259,9 +265,9 @@ const Home = () => {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                         {[
-                            { step: '01', title: 'Choose Category', desc: 'Select from verified contractors, engineers or direct labor', icon: '🔍' },
-                            { step: '02', title: 'Check Expert Detail', desc: 'Review portfolios, ratings and verify experience level', icon: '📋' },
-                            { step: '03', title: 'Hire Instantly', desc: 'Send service requests and start your work today', icon: '✅' }
+                            { step: '01', title: 'Choose Category', desc: 'Select from verified contractors, engineers or direct labor', icon: <Search size={22} className="text-[#7C3AED]" /> },
+                            { step: '02', title: 'Check Expert Detail', desc: 'Review portfolios, ratings and verify experience level', icon: <ClipboardList size={22} className="text-[#3B82F6]" /> },
+                            { step: '03', title: 'Hire Instantly', desc: 'Send service requests and start your work today', icon: <CheckCircle size={22} className="text-[#10B981]" /> }
                         ].map((item, i) => (
                             <div key={i} className="work-step-animate" style={{ display: 'flex', gap: 20, position: 'relative', animation: `fadeInUp 0.6s ease-out ${i * 0.2}s both` }}>
                                 {i < 2 && <div style={{ position: 'absolute', left: '22px', top: '50px', bottom: '-26px', width: '2px', background: 'linear-gradient(#7C3AED33, transparent)' }} />}
@@ -273,11 +279,11 @@ const Home = () => {
                                     {item.icon}
                                 </div>
                                 <div>
-                                    <div style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '6px', background: i === 2 ? '#DCFCE7' : '#EFF6FF', color: i === 2 ? '#166534' : '#3B82F6', fontSize: '10px', fontWeight: '800', marginBottom: 6, textTransform: 'uppercase' }}>
+                                    <div style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '8px', background: i === 2 ? '#DCFCE7' : '#EFF6FF', color: i === 2 ? '#166534' : '#3B82F6', fontSize: '12px', fontWeight: '900', marginBottom: 8, textTransform: 'uppercase' }}>
                                         Step {item.step}
                                     </div>
-                                    <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '800', color: '#1F2937', margin: '0 0 4px 0' }}>{item.title}</h4>
-                                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: 1.5, maxWidth: '240px' }}>{item.desc}</p>
+                                    <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: '900', color: '#1F2937', margin: '0 0 6px 0' }}>{item.title}</h4>
+                                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', margin: 0, lineHeight: 1.6, maxWidth: '240px', fontWeight: '500' }}>{item.desc}</p>
                                 </div>
                             </div>
                         ))}

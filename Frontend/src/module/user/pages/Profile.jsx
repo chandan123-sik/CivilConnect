@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { UserCircle, ShieldCheck, Star, ChevronRight, LogOut } from 'lucide-react';
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -79,7 +80,7 @@ const Profile = () => {
                         )}
                     </div>
                     <div style={{ flex: 1 }}>
-                        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '19px', fontWeight: '800', color: '#111827', margin: '0 0 4px 0' }}>
+                        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '21px', fontWeight: '900', color: '#111827', margin: '0 0 6px 0' }}>
                             {clientName}
                         </h2>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -130,18 +131,18 @@ const Profile = () => {
                                     🏗️
                                 </div>
                                 <div>
-                                    <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '700', color: '#111827', margin: '0 0 2px 0' }}>{req.provider}</h4>
-                                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#6B7280', margin: 0 }}>{req.date} · {req.role}</p>
+                                    <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '800', color: '#111827', margin: '0 0 4px 0' }}>{req.provider}</h4>
+                                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#64748B', margin: 0, fontWeight: '500' }}>{req.date} · {req.role}</p>
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                                 <span style={{
-                                    display: 'inline-block', padding: '3px 8px', borderRadius: '6px',
+                                    display: 'inline-block', padding: '4px 10px', borderRadius: '8px',
                                     background: req.status === 'Accepted' ? '#DCFCE7' : '#FEF9C3',
-                                    color: req.status === 'Accepted' ? '#166534' : '#854D0E',
-                                    fontSize: '10px', fontWeight: '800', marginBottom: 4
+                                    color: req.status === 'Accepted' ? '#065F46' : '#854D0E',
+                                    fontSize: '11px', fontWeight: '900', marginBottom: 4
                                 }}>
-                                    {req.status.toUpperCase()}
+                                    {req.status}
                                 </span>
                                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', color: '#111827', margin: 0 }}>{req.price}</p>
                             </div>
@@ -157,9 +158,9 @@ const Profile = () => {
                 </h2>
                 <div style={{ background: '#fff', borderRadius: '24px', overflow: 'hidden', border: '1.5px solid #F3F4FB', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
                     {[
-                        { icon: '📝', label: 'Edit Profile Information', action: () => setShowEdit(true) },
-                        { icon: '🛡️', label: 'Safety & Privacy Policy', action: () => setShowPolicy(false) || setShowPolicy(true) },
-                        { icon: '⭐', label: 'Rate CivilConnect App', action: () => setShowRate(true) },
+                        { icon: <UserCircle size={18} />, label: 'Edit Profile Information', action: () => setShowEdit(true) },
+                        { icon: <ShieldCheck size={18} />, label: 'Safety & Privacy Policy', action: () => setShowPolicy(true) },
+                        { icon: <Star size={18} />, label: 'Rate CivilConnect App', action: () => setShowRate(true) },
                     ].map((item, i, arr) => (
                         <div key={item.label}
                             onClick={item.action}
@@ -174,10 +175,10 @@ const Profile = () => {
                                 transition: 'all 0.2s ease'
                             }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F3F4FB' }}>
-                                    <span style={{ fontSize: '15px' }}>{item.icon}</span>
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #F3E8FF', color: '#7C3AED' }}>
+                                    {item.icon}
                                 </div>
-                                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '700', color: '#374151' }}>{item.label}</span>
+                                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '700', color: '#1E293B' }}>{item.label}</span>
                             </div>
                             <span style={{ color: '#D1D5DB', fontSize: '18px' }}>›</span>
                         </div>
@@ -191,12 +192,14 @@ const Profile = () => {
                     onClick={handleLogout}
                     className="sign-out-btn-animate"
                     style={{
-                        width: '100%', padding: '14px', borderRadius: '14px',
-                        background: '#FFF1F2', border: '1px solid #FECDD3',
-                        color: '#E11D48', fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '900',
-                        cursor: 'pointer', transition: 'all 0.2s ease'
+                        width: '100%', padding: '16px', borderRadius: '16px',
+                        background: '#FFF1F2', border: '1.5px solid #FECDD3',
+                        color: '#E11D48', fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '900',
+                        cursor: 'pointer', transition: 'all 0.2s ease',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                     }}
                 >
+                    <LogOut size={20} />
                     Sign Out Account
                 </button>
                 <p style={{ textAlign: 'center', fontFamily: "'Inter', sans-serif", fontSize: '11px', color: '#9CA3AF', marginTop: 8 }}>

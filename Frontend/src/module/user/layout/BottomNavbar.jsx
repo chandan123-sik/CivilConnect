@@ -90,9 +90,9 @@ const BottomNavbar = () => {
                         </div>
                         <span style={{
                             fontFamily: "'Inter', sans-serif",
-                            fontSize: '11px',
-                            fontWeight: active ? '700' : '500',
-                            color: active ? '#7C3AED' : '#94A3B8',
+                            fontSize: '13px',
+                            fontWeight: active ? '800' : '600',
+                            color: active ? '#7C3AED' : '#64748B',
                             letterSpacing: '0.01em',
                         }}>
                             {tab.label}

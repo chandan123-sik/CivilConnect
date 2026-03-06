@@ -47,25 +47,25 @@ const RequestsHistory = () => {
                         justifyContent: 'space-between',
                         alignItems: 'center'
                     }}>
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>
+                        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
                                 {req.role.includes('Civil') ? '🏗️' : '🔧'}
                             </div>
                             <div>
-                                <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '700', color: '#1F2937', margin: '0 0 4px 0' }}>{req.provider}</h4>
-                                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#6B7280', margin: 0 }}>{req.date} · {req.role}</p>
+                                <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: '800', color: '#1E293B', margin: '0 0 6px 0' }}>{req.provider}</h4>
+                                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#64748B', margin: 0, fontWeight: '500' }}>{req.date} · {req.role}</p>
                             </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
                             <span style={{
-                                display: 'inline-block', padding: '4px 12px', borderRadius: '8px',
+                                display: 'inline-block', padding: '5px 12px', borderRadius: '10px',
                                 background: req.status === 'Accepted' ? '#DCFCE7' : req.status === 'Rejected' ? '#FEE2E2' : '#FEF9C3',
                                 color: req.status === 'Accepted' ? '#166534' : req.status === 'Rejected' ? '#991B1B' : '#854D0E',
-                                fontSize: '11px', fontWeight: '800', marginBottom: 6
+                                fontSize: '12px', fontWeight: '900', marginBottom: 8
                             }}>
                                 {req.status}
                             </span>
-                            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '800', color: '#1F2937', margin: 0 }}>{req.price}</p>
+                            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '900', color: '#1E293B', margin: 0 }}>{req.price}</p>
                         </div>
                     </div>
                 ))}

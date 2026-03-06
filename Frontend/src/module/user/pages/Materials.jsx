@@ -78,8 +78,8 @@ const Materials = () => {
                     }}>
                         💡
                     </div>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#854D0E', margin: 0, lineHeight: 1.4, fontWeight: '500' }}>
-                        <b style={{ fontWeight: '800', color: '#713F12' }}>Reference Only:</b> Market prices fluctuated daily. Direct ordering is currently disabled.
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#854D0E', margin: 0, lineHeight: 1.5, fontWeight: '500' }}>
+                        <b style={{ fontWeight: '900', color: '#713F12' }}>Reference Only:</b> Market prices fluctuated daily. Direct ordering is currently disabled.
                     </p>
                 </div>
             </div>
@@ -106,8 +106,8 @@ const Materials = () => {
                             background: activeCat === cat ? '#7C3AED' : '#fff',
                             color: activeCat === cat ? '#fff' : '#4B5563',
                             fontFamily: "'Inter', sans-serif",
-                            fontSize: '12px',
-                            fontWeight: '700',
+                            fontSize: '14px',
+                            fontWeight: '800',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
                             boxShadow: activeCat === cat ? '0 8px 16px rgba(124, 58, 237, 0.2)' : 'none',
@@ -149,7 +149,7 @@ const Materials = () => {
                         </div>
                         <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
                             <div>
-                                <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: '700', color: '#111827', margin: '0 0 4px 0', lineHeight: 1.4, height: '36px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '800', color: '#111827', margin: '0 0 6px 0', lineHeight: 1.4, height: '42px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                                     {m.name}
                                 </h3>
                             </div>
@@ -158,7 +158,7 @@ const Materials = () => {
                                     <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '900', color: '#7C3AED' }}>
                                         {m.price}
                                     </span>
-                                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', color: '#6B7280', fontWeight: '500' }}>
+                                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
                                         {m.unit}
                                     </span>
                                 </div>

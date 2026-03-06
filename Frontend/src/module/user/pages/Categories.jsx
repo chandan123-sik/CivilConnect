@@ -99,7 +99,7 @@ const Categories = () => {
                         }}>
                             {cat.icon}
                         </div>
-                        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
+                        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '800', color: '#111827', margin: 0 }}>
                             {cat.label}
                         </h3>
                     </div>
