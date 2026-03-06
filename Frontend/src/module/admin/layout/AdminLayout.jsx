@@ -87,7 +87,7 @@ const AdminLayout = () => {
                 </header>
 
                 {/* Dynamic Page Content container */}
-                <div className="flex-1 overflow-y-auto p-8 relative">
+                <div className="flex-1 overflow-y-auto p-8 relative custom-scrollbar">
                     <Outlet />
                 </div>
             </main>
