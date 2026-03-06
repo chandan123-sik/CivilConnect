@@ -34,23 +34,12 @@ const OTPVerification = () => {
     const handleEnter = () => {
         if (!isReady) return;
 
-        const existingRole = localStorage.getItem('role');
-        const isProfileComplete = localStorage.getItem('profile_complete') === 'true';
+        // Set a dummy token for the session to indicate successful OTP verification
+        localStorage.setItem('access_token', 'temp_verified_token');
 
-        // Set dummy token for session
-        localStorage.setItem('access_token', existingRole === 'provider' ? 'dummy_provider_token' : 'dummy_user_token');
-
-        if (existingRole && isProfileComplete) {
-            // Already registered - go to respective panel
-            if (existingRole === 'provider') {
-                navigate('/serviceprovider/home');
-            } else {
-                navigate('/user/home');
-            }
-        } else {
-            // Brand new user or incomplete profile - start role selection
-            navigate('/auth/role-selection');
-        }
+        // Always navigate to role selection as requested by the user
+        // This ensures they can choose between User and Service Provider every time they login/verify
+        navigate('/auth/role-selection');
     };
 
     return (

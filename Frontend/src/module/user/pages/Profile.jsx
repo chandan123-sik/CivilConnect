@@ -8,6 +8,7 @@ const Profile = () => {
     const [clientEmail, setClientEmail] = useState(localStorage.getItem('user_email') || '');
     const [clientArea, setClientArea] = useState(localStorage.getItem('user_area') || '');
     const [clientGender, setClientGender] = useState(localStorage.getItem('user_gender') || '');
+    const [profileImg] = useState(localStorage.getItem('user_profile_image'));
 
     const [showEdit, setShowEdit] = useState(false);
     const [showPolicy, setShowPolicy] = useState(false);
@@ -69,9 +70,13 @@ const Profile = () => {
                     <div style={{
                         width: '64px', height: '64px', borderRadius: '16px',
                         background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '30px', flexShrink: 0
+                        overflow: 'hidden', flexShrink: 0
                     }}>
-                        👤
+                        {profileImg ? (
+                            <img src={profileImg} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(clientName)}&background=F5F3FF&color=7C3AED`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        )}
                     </div>
                     <div style={{ flex: 1 }}>
                         <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '19px', fontWeight: '800', color: '#111827', margin: '0 0 4px 0' }}>

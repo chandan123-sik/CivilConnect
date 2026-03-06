@@ -13,15 +13,41 @@ const RoleSelection = () => {
     }, []);
 
     const handleContinue = () => {
+        if (!selectedRole) return;
+
+        // Set the chosen role immediately
+        localStorage.setItem('role', selectedRole);
+
+        const isProfileComplete = localStorage.getItem('profile_complete') === 'true';
+        const previousRole = localStorage.getItem('last_user_role'); // Track if role changed during test
+
         if (selectedRole === 'user') {
-            navigate('/auth/complete-profile');
-        } else if (selectedRole === 'provider') {
-            if (!category.trim()) {
-                alert('Please enter your professional category');
-                return;
+            // Update temporary token to role-specific one
+            localStorage.setItem('access_token', 'dummy_user_token');
+
+            if (isProfileComplete && previousRole === 'user') {
+                navigate('/user/home');
+            } else {
+                // If switching from provider to user for testing, or brand new
+                localStorage.setItem('last_user_role', 'user');
+                navigate('/auth/complete-profile');
             }
-            localStorage.setItem('provider_category', category.trim());
-            navigate('/auth/provider-plans');
+
+        } else if (selectedRole === 'provider') {
+            // Update temporary token to role-specific one
+            localStorage.setItem('access_token', 'dummy_provider_token');
+
+            if (isProfileComplete && previousRole === 'provider') {
+                navigate('/serviceprovider/home');
+            } else {
+                if (!category.trim()) {
+                    alert('Please enter your professional category');
+                    return;
+                }
+                localStorage.setItem('provider_category', category.trim());
+                localStorage.setItem('last_user_role', 'provider');
+                navigate('/auth/create-professional-profile');
+            }
         }
     };
 

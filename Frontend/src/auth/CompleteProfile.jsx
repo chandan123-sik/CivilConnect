@@ -42,7 +42,12 @@ const CompleteProfile = () => {
         localStorage.setItem('user_city', formData.city.trim());
         localStorage.setItem('user_area', formData.area.trim());
         localStorage.setItem('user_gender', formData.gender);
+        if (preview) {
+            localStorage.setItem('user_profile_image', preview);
+        }
         localStorage.setItem('profile_complete', 'true');
+        localStorage.setItem('role', 'user');
+        localStorage.setItem('last_user_role', 'user');
 
         // Redirect to user panel
         navigate('/user/home');

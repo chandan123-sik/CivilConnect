@@ -12,7 +12,8 @@ const ProviderOnboardingPlans = () => {
 
     const handlePlanSelect = (planId) => {
         localStorage.setItem('onboarding_plan_id', planId);
-        navigate('/auth/create-professional-profile');
+        // Completed onboarding, go to panel (where they will wait for approval)
+        navigate('/serviceprovider/home');
     };
 
     return (

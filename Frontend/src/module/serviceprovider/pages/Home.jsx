@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 const ProviderHome = () => {
     const [isOnline, setIsOnline] = useState(true);
     const navigate = useNavigate();
+    const providerName = localStorage.getItem('provider_name') || 'Ramesh Sharma';
+    const profileImg = localStorage.getItem('provider_profile_image');
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-10">
@@ -12,14 +14,18 @@ const ProviderHome = () => {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="relative">
-                            <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md overflow-hidden border border-white/20 shadow-sm">
-                                <img src="https://ui-avatars.com/api/?name=Ramesh+Sharma&background=ffffff&color=1E3A8A" alt="Profile" className="w-full h-full object-cover" />
+                            <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md overflow-hidden border border-white/20 shadow-sm flex items-center justify-center">
+                                {profileImg ? (
+                                    <img src={profileImg} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(providerName)}&background=ffffff&color=1E3A8A`} alt="Profile" className="w-full h-full object-cover" />
+                                )}
                             </div>
                             <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-[#1E3A8A] rounded-full ${isOnline ? 'bg-green-400' : 'bg-slate-400'}`} />
                         </div>
                         <div>
                             <p className="text-blue-200/60 text-[11px] font-bold uppercase tracking-wider">Welcome,</p>
-                            <h1 className="text-white text-xl font-[1000] tracking-tight">Ramesh Sharma</h1>
+                            <h1 className="text-white text-xl font-[1000] tracking-tight">{providerName}</h1>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">

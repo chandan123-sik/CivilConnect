@@ -4,8 +4,9 @@ import { mockCategories, mockProviders } from '../mockData';
 
 const Home = () => {
     const navigate = useNavigate();
-    const [clientName] = useState(localStorage.getItem('client_name') || 'Guest');
-    const [clientCity] = useState(localStorage.getItem('client_city') || 'Pune');
+    const [userName] = useState(localStorage.getItem('user_name') || 'Guest');
+    const [userCity] = useState(localStorage.getItem('user_city') || 'Pune');
+    const [profileImg] = useState(localStorage.getItem('user_profile_image'));
 
     const bannerRef = React.useRef(null);
     const [currentBanner, setCurrentBanner] = useState(0);
@@ -46,7 +47,7 @@ const Home = () => {
         <div style={{ paddingBottom: 20 }}>
             {/* Header / Top Bar */}
             <header style={{
-                padding: '16px 20px 24px',
+                padding: '16px 20px 12px',
                 background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
                 borderRadius: '0 0 32px 32px',
                 boxShadow: '0 10px 30px rgba(124, 58, 237, 0.2)',
@@ -57,13 +58,13 @@ const Home = () => {
             }}>
                 <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
                     <div>
-                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: '0 0 4px 0', fontWeight: '600' }}>
-                            Good day,
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: '0 0 4px 0', fontWeight: '600', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            Good day, <span style={{ fontSize: '18px' }}>👋</span>
                         </p>
-                        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: '900', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {clientName} <span style={{ fontSize: '22px' }}>👋</span>
+                        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: '900', color: '#fff', margin: 0 }}>
+                            {userName}
                         </h1>
                     </div>
                     <div style={{
@@ -77,7 +78,7 @@ const Home = () => {
                         border: '1px solid rgba(255,255,255,0.2)'
                     }}>
                         <span style={{ fontSize: '14px' }}>📍</span>
-                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: '700', color: '#fff' }}>{clientCity}</span>
+                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: '700', color: '#fff' }}>{userCity}</span>
                     </div>
                 </div>
             </header>

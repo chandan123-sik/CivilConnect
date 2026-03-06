@@ -10,19 +10,18 @@ const ProviderProfile = () => {
         pricing: localStorage.getItem('provider_pricing') || '₹800/Visit',
         specialities: localStorage.getItem('provider_specialities') || 'Residential Const., RCC Work, Structural Design, Site Mgmt',
         rating: localStorage.getItem('provider_rating') || '4.8',
-        hasPlan: !!localStorage.getItem('onboarding_plan_id')
+        hasPlan: !!localStorage.getItem('onboarding_plan_id'),
+        profileImg: localStorage.getItem('provider_profile_image')
     });
 
-    const [gallery, setGallery] = useState([
-        {
-            img: localStorage.getItem('provider_work_image') || 'https://images.unsplash.com/photo-1541913057-259c00b10288?w=400&h=400&fit=crop',
-            desc: localStorage.getItem('provider_work_desc') || 'Project Milestone 1'
-        },
-        {
-            img: 'https://images.unsplash.com/photo-1503387762-592dee58c460?w=400&h=400&fit=crop',
-            desc: 'Industrial Structure'
+    const [gallery, setGallery] = useState(() => {
+        const savedWork = localStorage.getItem('provider_work_image');
+        const savedDesc = localStorage.getItem('provider_work_desc');
+        if (savedWork) {
+            return [{ img: savedWork, desc: savedDesc || 'Project Milestone' }];
         }
-    ]);
+        return []; // Start with empty gallery if no work is uploaded yet
+    });
 
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [formData, setFormData] = useState({ ...profile });
@@ -90,8 +89,12 @@ const ProviderProfile = () => {
                 {/* ── Profile Hero ── */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center">
                     <div className="relative mb-4">
-                        <div className="w-24 h-24 rounded-[28px] bg-slate-100 border-2 border-white shadow-md overflow-hidden ring-4 ring-slate-50">
-                            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=1E3A8A&color=fff&size=200`} alt="Profile" className="w-full h-full object-cover" />
+                        <div className="w-24 h-24 rounded-[28px] bg-slate-100 border-2 border-white shadow-md overflow-hidden ring-4 ring-slate-50 flex items-center justify-center">
+                            {profile.profileImg ? (
+                                <img src={profile.profileImg} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=1E3A8A&color=fff&size=200`} alt="Profile" className="w-full h-full object-cover" />
+                            )}
                         </div>
                         {profile.hasPlan && (
                             <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-xl border-4 border-white flex items-center justify-center text-white shadow-lg">
@@ -152,16 +155,24 @@ const ProviderProfile = () => {
                         <h3 className="text-slate-900 font-extrabold text-[15px]">Recent Work Gallery</h3>
                         <button onClick={() => setIsAddWorkOpen(true)} className="text-blue-600 font-black text-[11px] uppercase tracking-wider active:scale-95 transition-all p-1">+ Add New</button>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        {gallery.map((item, idx) => (
-                            <div key={idx} className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200/50 shadow-sm group active:scale-[0.98] transition-all cursor-pointer relative">
-                                <img src={item.img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Work" />
-                                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                                    <p className="text-white text-[9px] font-[1000] uppercase tracking-widest line-clamp-2 leading-relaxed drop-shadow-md">{item.desc}</p>
+
+                    {gallery.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-4">
+                            {gallery.map((item, idx) => (
+                                <div key={idx} className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200/50 shadow-sm group active:scale-[0.98] transition-all cursor-pointer relative">
+                                    <img src={item.img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Work" />
+                                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                                        <p className="text-white text-[9px] font-[1000] uppercase tracking-widest line-clamp-2 leading-relaxed drop-shadow-md">{item.desc}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-white border-2 border-dashed border-slate-100 p-8 rounded-[32px] text-center">
+                            <div className="text-3xl mb-2 opacity-30">📸</div>
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest leading-relaxed px-4">Your gallery is empty.<br />Upload your best projects to win client trust.</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Account Actions ── */}

@@ -53,9 +53,11 @@ const CreateProfessionalProfile = () => {
 
         localStorage.setItem('profile_complete', 'true');
         localStorage.setItem('role', 'provider');
-        localStorage.setItem('access_token', 'dummy_provider_token'); // Access panel
+        localStorage.setItem('last_user_role', 'provider');
+        localStorage.setItem('access_token', 'dummy_provider_token');
 
-        navigate('/serviceprovider/home');
+        // After profile, Go to Plans
+        navigate('/auth/provider-plans');
     };
 
     return (
