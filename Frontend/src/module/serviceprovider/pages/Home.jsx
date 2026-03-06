@@ -10,7 +10,7 @@ const ProviderHome = () => {
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-10">
             {/* ── Sticky Top Header ── */}
-            <div className="bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-6 pt-12 pb-6 rounded-b-[32px] shadow-lg sticky top-0 z-50">
+            <div className="bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-4 pt-8 pb-6 rounded-b-[32px] shadow-lg sticky top-0 z-50">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="relative">
@@ -24,7 +24,7 @@ const ProviderHome = () => {
                             <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-[#1E3A8A] rounded-full ${isOnline ? 'bg-green-400' : 'bg-slate-400'}`} />
                         </div>
                         <div>
-                            <p className="text-blue-200/60 text-[11px] font-bold uppercase tracking-wider">Welcome,</p>
+                            <p className="text-blue-200/60 text-[11px] font-bold tracking-wider">Welcome,</p>
                             <h1 className="text-white text-xl font-[1000] tracking-tight">{providerName}</h1>
                         </div>
                     </div>

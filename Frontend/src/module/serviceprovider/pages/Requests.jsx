@@ -17,7 +17,7 @@ const ProviderRequests = () => {
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-10">
             {/* ── Fixed Header ── */}
-            <div className="bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-6 pt-12 pb-4 sticky top-0 z-50 rounded-b-[32px] shadow-lg">
+            <div className="bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-6 pt-8 pb-4 sticky top-0 z-50 rounded-b-[32px] shadow-lg">
                 <div className="pb-4">
                     <h1 className="text-2xl font-[1000] text-white tracking-tight m-0">Project Requests</h1>
                     <p className="text-blue-200/60 text-[11px] font-bold uppercase tracking-widest mt-0.5">Manage your incoming leads</p>

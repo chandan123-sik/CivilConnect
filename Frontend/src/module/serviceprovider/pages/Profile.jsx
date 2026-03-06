@@ -72,10 +72,10 @@ const ProviderProfile = () => {
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-10">
             {/* ── Sticky Header ── */}
-            <div className="bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-6 pt-12 pb-6 rounded-b-[32px] shadow-lg sticky top-0 z-50 flex items-center justify-between">
+            <div className="bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-4 pt-8 pb-6 rounded-b-[32px] shadow-lg sticky top-0 z-50 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-[1000] text-white tracking-tight m-0">Expert Profile</h1>
-                    <p className="text-blue-200/60 text-[11px] font-bold uppercase tracking-widest mt-0.5">Manage professional details</p>
+                    <p className="text-blue-200/80 text-[13px] font-bold tracking-wide mt-0.5">Manage professional details</p>
                 </div>
                 <button
                     onClick={() => { setFormData({ ...profile }); setIsEditOpen(true); }}
@@ -104,27 +104,27 @@ const ProviderProfile = () => {
                     </div>
 
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">{profile.name}</h2>
-                    <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.2em] mt-1">{profile.role}</p>
+                    <p className="text-slate-500 text-[13px] font-bold tracking-tight mt-1">{profile.role}</p>
 
                     <div className="mt-4 flex gap-2">
                         {profile.hasPlan && (
-                            <div className="bg-blue-50 text-[#1E3A8A] text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border border-blue-100 shadow-sm flex items-center gap-2">
+                            <div className="bg-blue-50 text-[#1E3A8A] text-[11px] font-bold px-4 py-1.5 rounded-full border border-blue-100 shadow-sm flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
                                 Verified Expert
                             </div>
                         )}
-                        <div className="bg-amber-50 text-amber-600 text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border border-amber-100 shadow-sm">⭐ {profile.rating} Rating</div>
+                        <div className="bg-amber-50 text-amber-600 text-[11px] font-bold px-4 py-1.5 rounded-full border border-amber-100 shadow-sm">⭐ {profile.rating} Rating</div>
                     </div>
                 </div>
 
                 {/* ── Info Stats Strip ── */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white rounded-xl p-4 border border-slate-100 text-center shadow-sm">
-                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 opacity-60">Experience</p>
+                        <p className="text-slate-500 text-[12px] font-bold tracking-tight mb-1 content-center opacity-80">Experience</p>
                         <p className="text-slate-900 font-[1000] text-base">{profile.exp} Years</p>
                     </div>
                     <div className="bg-white rounded-xl p-4 border border-slate-100 text-center shadow-sm">
-                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 opacity-60">Base Price</p>
+                        <p className="text-slate-500 text-[12px] font-bold tracking-tight mb-1 content-center opacity-80">Base Price</p>
                         <p className="text-slate-900 font-[1000] text-base">{profile.pricing}</p>
                     </div>
                 </div>

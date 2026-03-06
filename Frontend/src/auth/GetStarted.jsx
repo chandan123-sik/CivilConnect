@@ -1,136 +1,105 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const slides = [
+    {
+        title: "Let's get started",
+        desc: "Build your dream project with verified experts and quality materials today.",
+        img: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=800&auto=format"
+    },
+    {
+        title: "Manage Everything",
+        desc: "From labor tracking to material audits, manage your site directly with ease.",
+        img: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=800&auto=format"
+    },
+    {
+        title: "Verified Experts",
+        desc: "Connect with certified engineers and contractors for safe construction.",
+        img: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=800&auto=format"
+    }
+];
 
 const GetStarted = () => {
     const navigate = useNavigate();
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentSlide(prev => (prev + 1) % slides.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
-        <div style={{ position: 'relative', height: '100dvh', width: '100%', overflow: 'hidden', background: '#2D1B69' }}>
+        <div className="h-screen bg-white flex flex-col items-center px-8 pt-20 pb-12 overflow-hidden">
+            <style>{`
+                @keyframes scaleIn {
+                    from { transform: scale(0.8); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                .img-animate { animation: scaleIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+                .text-animate { animation: slideUp 0.6s ease-out forwards; }
+                @keyframes slideUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                .animate-spin-slow {
+                    animation: spin 8s linear infinite;
+                }
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
 
-            {/* Background Image - Construction Site with dramatic lighting */}
-            <div
-                style={{
-                    position: 'absolute',
-                    inset: 0,
-                    backgroundImage: `url('https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=1000&q=80')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    filter: 'brightness(0.5) contrast(1.1)',
-                }}
-            />
-
-            {/* Gradient Overlay for better text legibility */}
-            <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(to bottom, rgba(45, 27, 105, 0.4) 0%, rgba(45, 27, 105, 0.95) 100%)'
-            }} />
-
-            {/* Content Container */}
-            <div style={{
-                position: 'relative',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-end',
-                padding: '0 24px 60px',
-                zIndex: 10
-            }}>
-
-                {/* Brand Logo/Header Area */}
-                <div style={{ marginBottom: 'auto', paddingTop: '60px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                            width: '40px',
-                            height: '40px',
-                            background: '#8B5CF6',
-                            borderRadius: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '24px',
-                            boxShadow: '0 8px 16px rgba(139, 92, 246, 0.3)'
-                        }}>🏗️</div>
-                        <h1 style={{
-                            fontFamily: "'Inter', sans-serif",
-                            fontSize: '22px',
-                            fontWeight: '800',
-                            color: '#fff',
-                            letterSpacing: '-0.02em',
-                            margin: 0
-                        }}>CivilConnect</h1>
-                    </div>
+            {/* Central Circle Image Slider - MOVED UP */}
+            <div className="relative w-full flex justify-center mb-6">
+                <div key={currentSlide} className="w-64 h-64 rounded-full overflow-hidden border-[6px] border-purple-50 shadow-2xl img-animate z-10">
+                    <img
+                        key={slides[currentSlide].img}
+                        src={slides[currentSlide].img}
+                        alt="Onboarding"
+                        className="w-full h-full object-cover"
+                    />
                 </div>
+                {/* Decorative Elements */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 border-2 border-dashed border-purple-100 rounded-full animate-spin-slow opacity-50" />
+            </div>
 
-                {/* Main Text Content */}
-                <div style={{ marginBottom: '40px' }}>
-                    <h2 style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '36px',
-                        fontWeight: '800',
-                        color: '#fff',
-                        lineHeight: '1.1',
-                        margin: '0 0 16px 0',
-                        letterSpacing: '-0.04em'
-                    }}>
-                        Build Your <span style={{ color: '#A78BFA' }}>Future</span> With Us.
-                    </h2>
-                    <p style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '16px',
-                        color: 'rgba(255,255,255,0.7)',
-                        lineHeight: '1.6',
-                        margin: 0,
-                        maxWidth: '280px'
-                    }}>
-                        Connecting you with the best construction professionals and manpower in one platform.
+            {/* Text & Indicators Section */}
+            <div className="w-full text-center flex flex-col items-center bg-white z-10">
+                <div key={`text-${currentSlide}`} className="text-animate mb-6">
+                    <h1 className="text-2xl font-[1000] text-slate-900 tracking-tight mb-3">
+                        {slides[currentSlide].title}
+                    </h1>
+                    <p className="text-slate-500/80 text-sm font-semibold leading-relaxed px-4 max-w-[300px] mx-auto">
+                        {slides[currentSlide].desc}
                     </p>
                 </div>
 
-                {/* Get Started Button - Premium Purple Gradient */}
+                {/* Progress Indicators */}
+                <div className="flex gap-2 mb-8">
+                    {slides.map((_, idx) => (
+                        <div
+                            key={idx}
+                            style={{ transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                            className={`h-1.5 rounded-full ${currentSlide === idx ? 'w-10 bg-[#7C3AED] shadow-[0_2px_8px_rgba(124,58,237,0.4)]' : 'w-4 bg-slate-100'}`}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            {/* Bottom Button Section - MOVED DOWN SLIGHTLY */}
+            <div className="w-full mt-auto pb-10">
                 <button
                     onClick={() => navigate('/auth/mobile-input')}
-                    style={{
-                        width: '100%',
-                        background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-                        border: 'none',
-                        borderRadius: '18px',
-                        padding: '20px 0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '12px',
-                        cursor: 'pointer',
-                        boxShadow: '0 20px 40px rgba(124, 58, 237, 0.4)',
-                        marginBottom: '24px',
-                        WebkitTapHighlightColor: 'transparent',
-                        transition: 'transform 0.1s ease',
-                    }}
-                    onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.97)'; }}
-                    onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-                    onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    className="w-full bg-[#7C3AED] text-white py-5 rounded-[24px] text-xs font-[1000] uppercase tracking-[0.3em] shadow-2xl shadow-purple-900/30 active:scale-95 transition-all outline-none"
                 >
-                    <span style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: '17px',
-                        fontWeight: '700',
-                        color: '#fff',
-                        letterSpacing: '0.01em'
-                    }}>
-                        Get Started
-                    </span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                        <polyline points="12 5 19 12 12 19"></polyline>
-                    </svg>
+                    Get Started
                 </button>
-
-                {/* Indicators / Onboarding Steps */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <div style={{ width: '24px', height: '6px', borderRadius: '3px', background: '#8B5CF6' }} />
-                    <div style={{ width: '6px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.2)' }} />
-                    <div style={{ width: '6px', height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.2)' }} />
-                </div>
+                <p className="text-center text-slate-500 text-[9px] font-black uppercase tracking-widest mt-6">
+                    Premium Civil Construction Network
+                </p>
             </div>
         </div>
     );

@@ -71,7 +71,7 @@ const RoleSelection = () => {
                         👋
                     </div>
                     <h2 className="text-2xl font-[1000] text-slate-900 tracking-tight mb-2">Welcome!</h2>
-                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest leading-relaxed">
+                    <p className="text-slate-600 text-xs font-bold uppercase tracking-widest leading-relaxed">
                         How would you like to use CivilConnect?
                     </p>
                 </div>
@@ -88,7 +88,7 @@ const RoleSelection = () => {
                             </div>
                             <div>
                                 <h3 className="text-slate-900 font-black text-sm uppercase tracking-wider mb-0.5">I am a User</h3>
-                                <p className="text-slate-400 text-[10px] font-bold">I want to hire professionals</p>
+                                <p className="text-slate-600 text-[10px] font-bold">I want to hire professionals</p>
                             </div>
                         </div>
                     </button>
@@ -104,7 +104,7 @@ const RoleSelection = () => {
                             </div>
                             <div>
                                 <h3 className="text-slate-900 font-black text-sm uppercase tracking-wider mb-0.5">Service Provider</h3>
-                                <p className="text-slate-400 text-[10px] font-bold">I want to offer my services</p>
+                                <p className="text-slate-600 text-[10px] font-bold">I want to offer my services</p>
                             </div>
                         </div>
                     </button>
@@ -112,13 +112,13 @@ const RoleSelection = () => {
                     {/* Category Selection for Provider */}
                     {selectedRole === 'provider' && (
                         <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Choose Category</label>
+                            <label className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Choose Category</label>
                             <input
                                 type="text"
                                 value={category}
                                 onChange={(e) => setCategory(e.target.value)}
                                 placeholder="e.g. Contractor, Painter, Plumber"
-                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all"
+                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all"
                             />
                         </div>
                     )}
@@ -135,8 +135,8 @@ const RoleSelection = () => {
                     </div>
                 )}
 
-                <div className="mt-8 pt-6 border-t border-slate-50 text-center">
-                    <p className="text-[10px] text-slate-300 font-black uppercase tracking-[0.2em]">Select an option to proceed</p>
+                <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Select an option to proceed</p>
                 </div>
             </div>
         </div>

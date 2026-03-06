@@ -36,7 +36,7 @@ const ProviderSubscription = () => {
             `}</style>
 
             {/* ── Modern Sticky Header ── */}
-            <div className="sticky top-0 z-[60] bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-6 pt-12 pb-6 shadow-xl rounded-b-[32px]">
+            <div className="sticky top-0 z-[60] bg-gradient-to-br from-[#1E3A8A] to-indigo-900 px-6 pt-8 pb-6 shadow-xl rounded-b-[32px]">
                 <h1 className="text-2xl font-[1000] text-white tracking-tight m-0">Business Plans</h1>
                 <p className="text-blue-200/60 text-[11px] font-bold uppercase tracking-widest mt-0.5">Upgrade your visibility</p>
             </div>
@@ -51,12 +51,15 @@ const ProviderSubscription = () => {
 
                     <div className="relative z-10 px-6 py-6 shimmer-bg">
                         <div className="flex justify-between items-start mb-4">
-                            <div className="px-3.5 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl">
-                                <span className="text-white text-[9px] font-black uppercase tracking-[0.25em] leading-none">Your Plan</span>
+                            {/* Premium Ornament */}
+                            <div className="w-10 h-10 bg-white/10 backdrop-blur-xl rounded-xl flex items-center justify-center border border-white/20 animate-float shadow-lg">
+                                <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM19 19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V18H19V19Z" />
+                                </svg>
                             </div>
                             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 border border-green-500/30 rounded-lg">
                                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                                <span className="text-green-400 text-[9px] font-black uppercase tracking-widest leading-none">Active</span>
+                                <span className="text-green-400 text-[9px] font-black uppercase tracking-widest leading-none">Active Plan</span>
                             </div>
                         </div>
 
@@ -65,25 +68,26 @@ const ProviderSubscription = () => {
                             <p className="text-blue-200/40 text-[10px] font-bold uppercase tracking-[0.2em]">Highest Search Priority</p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10">
+                        <div className="grid grid-cols-2 gap-4 p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 mb-5">
                             <div>
-                                <p className="text-blue-200/50 text-[9px] font-black uppercase tracking-widest mb-1">Renewal</p>
-                                <p className="text-white text-base font-[1000]">15 MAR</p>
+                                <p className="text-blue-200/50 text-[9px] font-black uppercase tracking-widest mb-1">Active Since</p>
+                                <p className="text-white text-base font-[1000]">15 FEB</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-blue-200/50 text-[9px] font-black uppercase tracking-widest mb-1">Remaining</p>
-                                <p className="text-sky-300 text-base font-[1000]">05 Days</p>
+                                <p className="text-blue-200/50 text-[9px] font-black uppercase tracking-widest mb-1">Valid Until</p>
+                                <p className="text-white text-base font-[1000]">15 MAR</p>
                             </div>
                         </div>
 
                         {/* Usage Progress */}
-                        <div className="mt-5 space-y-2">
+                        <div className="space-y-2">
                             <div className="flex justify-between items-center text-[10px] font-black text-white/50 uppercase tracking-widest">
-                                <span>Cycle</span>
-                                <span>85% Spent</span>
+                                <span>Cycle Progress</span>
+                                <span className="text-red-400">05 Days Remaining</span>
                             </div>
                             <div className="h-1.5 w-full bg-black/20 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-blue-400 to-white rounded-full w-[85%]" />
+                                {/* Logic: Red if < 15 days, Yellow if < 25 days, Green otherwise */}
+                                <div className="h-full bg-red-500 rounded-full w-[16%]" />
                             </div>
                         </div>
                     </div>
@@ -98,8 +102,11 @@ const ProviderSubscription = () => {
                         <div
                             key={plan.id}
                             style={{ animationDelay: `${idx * 150}ms` }}
-                            className={`animate-in slide-in-from-bottom-5 fade-in duration-700 fill-mode-both bg-white border-2 rounded-2xl p-6 transition-all duration-300 relative group active:scale-[0.97]
-                            ${plan.featured ? 'border-[#1E3A8A] shadow-2xl shadow-blue-900/10 scale-102' : 'border-slate-100 hover:border-slate-200 shadow-sm'}`}
+                            className={`animate-in slide-in-from-bottom-5 fade-in duration-700 fill-mode-both bg-white border-2 rounded-[32px] p-6 transition-all duration-500 relative group 
+                            hover:scale-[1.02] hover:shadow-2xl hover:shadow-slate-200 cursor-pointer
+                            ${plan.featured ?
+                                    'border-[#1E3A8A] shadow-xl shadow-blue-900/10 hover:border-indigo-600' :
+                                    'border-slate-100/80 hover:border-green-500 hover:shadow-green-900/5'}`}
                         >
                             {plan.featured && (
                                 <div className="absolute -top-3 right-6 bg-[#1E3A8A] text-white text-[9px] font-black px-4 py-1.5 rounded-full shadow-lg uppercase tracking-widest z-10">

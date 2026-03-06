@@ -56,16 +56,16 @@ const CompleteProfile = () => {
     return (
         <div className="min-h-screen bg-[#FBFCFE] pb-12">
             {/* Header */}
-            <div className="bg-gradient-to-br from-[#8B5CF6] to-[#7C3AED] px-8 pt-16 pb-8 rounded-b-[40px] shadow-2xl relative overflow-hidden">
+            <div className="bg-gradient-to-br from-[#8B5CF6] to-[#7C3AED] px-8 pt-10 pb-10 rounded-b-[40px] shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 <div className="relative z-10">
                     <h1 className="text-3xl font-[1000] text-white tracking-tight leading-tight mb-2">Complete Your Profile</h1>
-                    <p className="text-purple-100/60 text-[11px] font-black uppercase tracking-[0.2em]">Build your digital identity</p>
+                    <p className="text-purple-100/80 text-[13px] font-bold tracking-wide">Build your digital identity</p>
                 </div>
             </div>
 
-            <div className="px-6 -mt-10">
-                <div className="bg-white rounded-[40px] p-8 shadow-xl border border-slate-100">
+            <div className="px-3 -mt-10">
+                <div className="bg-white rounded-[32px] px-5 py-8 shadow-xl border border-slate-100">
                     {/* Profile Image Section */}
                     <div className="flex flex-col items-center mb-10">
                         <div className="relative group">
@@ -74,8 +74,11 @@ const CompleteProfile = () => {
                                     <img src={preview} alt="Preview" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="text-center">
-                                        <div className="text-2xl mb-1">📸</div>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight">Add Photo</p>
+                                        <svg className="w-8 h-8 mx-auto mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        <p className="text-[10px] text-slate-600 font-bold tracking-widest leading-tight">Add Photo</p>
                                     </div>
                                 )}
                             </div>
@@ -85,7 +88,7 @@ const CompleteProfile = () => {
                                 onChange={handleImageChange}
                                 className="absolute inset-0 opacity-0 cursor-pointer z-10"
                             />
-                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-[#7C3AED] rounded-2xl flex items-center justify-center text-white shadow-lg border-4 border-white">
+                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-[#7C3AED] rounded-xl flex items-center justify-center text-white shadow-lg border-4 border-white">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
                             </div>
                         </div>
@@ -94,65 +97,65 @@ const CompleteProfile = () => {
                     <div className="space-y-6">
                         {/* Name Input */}
                         <div>
-                            <label className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Full Name</label>
+                            <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">Full Name</label>
                             <input
                                 type="text"
                                 name="fullName"
                                 value={formData.fullName}
                                 onChange={handleInput}
                                 placeholder="Enter your full name"
-                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#7C3AED] focus:bg-white outline-none transition-all duration-300 shadow-sm"
+                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:bg-white outline-none transition-all duration-300 shadow-sm"
                             />
                         </div>
 
                         {/* Email Input */}
                         <div>
-                            <label className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Email Address</label>
+                            <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">Email Address</label>
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleInput}
                                 placeholder="example@email.com"
-                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#7C3AED] focus:bg-white outline-none transition-all duration-300 shadow-sm"
+                                className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:bg-white outline-none transition-all duration-300 shadow-sm"
                             />
                         </div>
 
                         {/* Location Group */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-2 px-1">City</label>
+                                <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">City</label>
                                 <input
                                     type="text"
                                     name="city"
                                     value={formData.city}
                                     onChange={handleInput}
                                     placeholder="e.g. Pune"
-                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#7C3AED] focus:bg-white outline-none transition-all duration-300 shadow-sm"
+                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:bg-white outline-none transition-all duration-300 shadow-sm"
                                 />
                             </div>
                             <div>
-                                <label className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Area</label>
+                                <label className="text-slate-700 text-[13px] font-bold block mb-1.5 px-1">Area</label>
                                 <input
                                     type="text"
                                     name="area"
                                     value={formData.area}
                                     onChange={handleInput}
                                     placeholder="Locality"
-                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#7C3AED] focus:bg-white outline-none transition-all duration-300 shadow-sm"
+                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:bg-white outline-none transition-all duration-300 shadow-sm"
                                 />
                             </div>
                         </div>
 
                         {/* Gender Selection */}
                         <div>
-                            <label className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] block mb-4 px-1">Gender</label>
+                            <label className="text-slate-700 text-[13px] font-bold block mb-3 px-1">Gender</label>
                             <div className="grid grid-cols-3 gap-3">
                                 {['Male', 'Female', 'Other'].map(g => (
                                     <button
                                         key={g}
                                         onClick={() => setFormData(prev => ({ ...prev, gender: g }))}
-                                        className={`py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border-2 transition-all duration-300 ${formData.gender === g ? 'bg-[#7C3AED] border-[#7C3AED] text-white shadow-lg shadow-purple-900/20' : 'bg-slate-50/50 border-slate-50 text-slate-400 hover:border-slate-100'}`}
+                                        className={`py-3.5 rounded-2xl text-[11px] font-black tracking-widest border-2 transition-all duration-300 ${formData.gender === g ? 'bg-[#7C3AED] border-[#7C3AED] text-white shadow-lg shadow-purple-900/20' : 'bg-slate-50/50 border-slate-50 text-slate-600 hover:border-slate-100'}`}
                                     >
                                         {g}
                                     </button>
@@ -161,15 +164,15 @@ const CompleteProfile = () => {
                         </div>
 
                         {error && (
-                            <p className="text-red-500 text-center font-black text-[10px] uppercase tracking-widest pt-4">{error}</p>
+                            <p className="text-red-500 text-center font-black text-[10px] tracking-widest pt-4">{error}</p>
                         )}
 
                         <div className="pt-6">
                             <button
                                 onClick={handleSubmit}
-                                className="w-full bg-[#7C3AED] text-white py-5 rounded-[24px] text-xs font-[1000] uppercase tracking-[0.3em] shadow-2xl shadow-purple-900/30 active:scale-95 transition-all outline-none"
+                                className="w-full bg-[#7C3AED] text-white py-5 rounded-[24px] text-sm font-[1000] tracking-[0.1em] shadow-2xl shadow-purple-900/30 active:scale-95 transition-all outline-none"
                             >
-                                Complete Registration
+                                Complete registration
                             </button>
                         </div>
                     </div>

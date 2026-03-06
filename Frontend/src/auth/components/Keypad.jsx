@@ -12,83 +12,57 @@ const Keypad = ({ onNumberPress, onDeletePress }) => {
         <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 12,
             width: '100%',
+            padding: '10px 0'
         }}>
             {keys.map((key, i) => {
-                // ── Empty cell (bottom-left) ──
-                if (key === null) {
-                    return <div key={i} />;
-                }
+                if (key === null) return <div key={i} />;
 
-                // ── Delete / ✕ button ──
-                if (key === 'del') {
-                    return (
-                        <button
-                            key={i}
-                            onClick={onDeletePress}
-                            aria-label="Delete"
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '20px 0',
-                                cursor: 'pointer',
-                                WebkitTapHighlightColor: 'transparent',
-                            }}
-                        >
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="#EF4444"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                style={{ width: 30, height: 30 }}
-                            >
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        </button>
-                    );
-                }
+                const isDel = key === 'del';
 
-                // ── Number button ──
                 return (
                     <button
                         key={i}
-                        onClick={() => onNumberPress(key.toString())}
+                        onClick={() => isDel ? onDeletePress() : onNumberPress(key.toString())}
                         style={{
-                            background: 'none',
+                            background: '#fff',
                             border: 'none',
-                            fontFamily: "'Playfair Display', serif",
-                            fontSize: 34,
-                            fontWeight: 400,
-                            color: '#111827',
-                            padding: '14px 0',
-                            cursor: 'pointer',
+                            borderRadius: '16px',
+                            height: '54px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            userSelect: 'none',
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: '22px',
+                            fontWeight: '600',
+                            color: '#111827',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                            cursor: 'pointer',
                             WebkitTapHighlightColor: 'transparent',
-                            transition: 'opacity 0.1s, transform 0.1s',
+                            transition: 'all 0.1s',
+                            userSelect: 'none'
                         }}
                         onPointerDown={e => {
-                            e.currentTarget.style.opacity = '0.5';
-                            e.currentTarget.style.transform = 'scale(0.88)';
+                            e.currentTarget.style.transform = 'scale(0.95)';
+                            e.currentTarget.style.background = '#f9fafb';
                         }}
                         onPointerUp={e => {
-                            e.currentTarget.style.opacity = '1';
                             e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.background = '#fff';
                         }}
                         onPointerLeave={e => {
-                            e.currentTarget.style.opacity = '1';
                             e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.background = '#fff';
                         }}
                     >
-                        {key}
+                        {isDel ? (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+                                <line x1="18" y1="9" x2="12" y2="15" />
+                                <line x1="12" y1="9" x2="18" y2="15" />
+                            </svg>
+                        ) : key}
                     </button>
                 );
             })}
