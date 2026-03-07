@@ -12,17 +12,17 @@ const Home = () => {
     const bannerRef = React.useRef(null);
     const [currentBanner, setCurrentBanner] = useState(0);
 
-    const banners = [
+    const banners = React.useMemo(() => [
         { title: 'Premium Construction Materials', desc: 'Get daily updated rates for cement, steel and more.', img: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80' },
         { title: 'Verified Expert Manpower', desc: 'Directly connect with top-rated contractors & engineers.', img: 'https://images.unsplash.com/photo-1503387762-592dea58ef21?w=800&q=80' },
         { title: 'Secure & Direct Connection', desc: 'Connect directly with experts without middlemen.', img: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=80' }
-    ];
+    ], []);
 
     React.useEffect(() => {
         const interval = setInterval(() => {
             if (bannerRef.current) {
                 const next = (currentBanner + 1) % banners.length;
-                const cardWidth = window.innerWidth - 28;
+                const cardWidth = bannerRef.current.offsetWidth || (window.innerWidth - 28);
                 const gap = 28;
                 bannerRef.current.scrollTo({
                     left: next * (cardWidth + gap),
@@ -30,7 +30,7 @@ const Home = () => {
                 });
                 setCurrentBanner(next);
             }
-        }, 3000);
+        }, 4000); // Increased to 4s for better readability
         return () => clearInterval(interval);
     }, [currentBanner, banners.length]);
 
@@ -230,8 +230,8 @@ const Home = () => {
                                 textAlign: 'center'
                             }}
                         >
-                            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F5F3FF', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', overflow: 'hidden' }}>
-                                {provider.avatar ? <img src={provider.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : provider.categoryId === 'contractor' ? '🏗️' : '👤'}
+                            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F3F4F6', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', overflow: 'hidden' }}>
+                                {provider.avatar ? <img src={provider.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" alt={provider.name} /> : provider.categoryId === 'contractor' ? '🏗️' : '👤'}
                             </div>
                             <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '800', color: '#1F2937', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {provider.name}

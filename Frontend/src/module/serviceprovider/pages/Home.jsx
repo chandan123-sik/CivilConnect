@@ -16,9 +16,9 @@ const ProviderHome = () => {
                         <div className="relative">
                             <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md overflow-hidden border border-white/20 shadow-sm flex items-center justify-center">
                                 {profileImg ? (
-                                    <img src={profileImg} alt="Profile" className="w-full h-full object-cover" />
+                                    <img src={profileImg} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                 ) : (
-                                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(providerName)}&background=ffffff&color=1E3A8A`} alt="Profile" className="w-full h-full object-cover" />
+                                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(providerName)}&background=ffffff&color=1E3A8A`} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                 )}
                             </div>
                             <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-[#1E3A8A] rounded-full ${isOnline ? 'bg-green-400' : 'bg-slate-400'}`} />

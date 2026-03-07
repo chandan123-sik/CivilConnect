@@ -91,9 +91,9 @@ const ProviderProfile = () => {
                     <div className="relative mb-4">
                         <div className="w-24 h-24 rounded-[28px] bg-slate-100 border-2 border-white shadow-md overflow-hidden ring-4 ring-slate-50 flex items-center justify-center">
                             {profile.profileImg ? (
-                                <img src={profile.profileImg} alt="Profile" className="w-full h-full object-cover" />
+                                <img src={profile.profileImg} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                             ) : (
-                                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=1E3A8A&color=fff&size=200`} alt="Profile" className="w-full h-full object-cover" />
+                                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=1E3A8A&color=fff&size=200`} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                             )}
                         </div>
                         {profile.hasPlan && (
@@ -160,7 +160,13 @@ const ProviderProfile = () => {
                         <div className="grid grid-cols-2 gap-4">
                             {gallery.map((item, idx) => (
                                 <div key={idx} className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200/50 shadow-sm group active:scale-[0.98] transition-all cursor-pointer relative">
-                                    <img src={item.img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Work" />
+                                    <img
+                                        src={item.img}
+                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                        alt="Work"
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
                                     <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
                                         <p className="text-white text-[9px] font-[1000] uppercase tracking-widest line-clamp-2 leading-relaxed drop-shadow-md">{item.desc}</p>
                                     </div>

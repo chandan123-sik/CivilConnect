@@ -7,11 +7,13 @@ const Materials = () => {
     const [search, setSearch] = useState('');
     const [activeCat, setActiveCat] = useState('All');
 
-    const filtered = mockMaterials.filter(m => {
-        const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
-        const matchesCat = activeCat === 'All' || m.category === activeCat;
-        return matchesSearch && matchesCat;
-    });
+    const filtered = React.useMemo(() => {
+        return mockMaterials.filter(m => {
+            const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase());
+            const matchesCat = activeCat === 'All' || m.category === activeCat;
+            return matchesSearch && matchesCat;
+        });
+    }, [search, activeCat]);
 
     return (
         <div style={{ paddingBottom: 20 }}>
@@ -137,8 +139,14 @@ const Materials = () => {
                         flexDirection: 'column',
                         height: '240px'
                     }}>
-                        <div style={{ height: '110px', width: '100%', overflow: 'hidden', position: 'relative' }}>
-                            <img src={m.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={m.name} />
+                        <div style={{ height: '110px', width: '100%', overflow: 'hidden', position: 'relative', background: '#F3F4F6' }}>
+                            <img
+                                src={m.image}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                alt={m.name}
+                                loading="lazy"
+                                decoding="async"
+                            />
                             <div style={{
                                 position: 'absolute', top: '8px', right: '8px',
                                 background: 'rgba(255,255,255,0.9)', padding: '4px 8px', borderRadius: '6px',

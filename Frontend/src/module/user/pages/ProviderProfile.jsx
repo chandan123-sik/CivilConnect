@@ -230,7 +230,7 @@ const ProviderProfile = () => {
                                     onChange={(e) => setRequestText(e.target.value)}
                                     style={{
                                         width: '100%', minHeight: '140px', background: '#F9FAFB',
-                                        border: '2px solid transparent', borderRadius: '18px',
+                                        borderRadius: '18px',
                                         padding: '16px', fontFamily: "'Inter', sans-serif", fontSize: '15px',
                                         color: '#1F2937', resize: 'none', marginBottom: '24px',
                                         outline: 'none', border: requestText.trim() ? '2px solid #EDE9FE' : '2px solid transparent',
