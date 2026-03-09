@@ -8,6 +8,7 @@ const ProviderProfile = () => {
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     const [requestSent, setRequestSent] = useState(false);
     const [requestText, setRequestText] = useState('');
+    const [requestBudget, setRequestBudget] = useState('');
 
     const provider = mockProviders.find(p => p.id === providerId);
     const category = mockCategories.find(c => c.id === provider?.categoryId);
@@ -16,12 +17,39 @@ const ProviderProfile = () => {
 
     const handleSendRequest = () => {
         if (!requestText.trim()) return;
+
+        // Capture User Info from LocalStorage
+        const userName = localStorage.getItem('user_name') || 'Guest User';
+        const userCity = localStorage.getItem('user_city') || 'Pune';
+        const userArea = localStorage.getItem('user_area') || '';
+        const userLocation = userArea ? `${userCity}, ${userArea}` : userCity;
+
+        // Create New Lead Object
+        const newLead = {
+            id: Date.now(),
+            type: provider.categoryName === 'Residential' ? '🏠 Residential' : '✨ Expert Service',
+            client: userName,
+            providerName: provider.name,
+            loc: userLocation,
+            service: provider.role,
+            desc: requestText,
+            price: requestBudget ? `₹${Number(requestBudget).toLocaleString('en-IN')}` : 'Negotiable',
+            date: 'Just Now',
+            status: 'pending',
+            phone: localStorage.getItem('user_phone') || '+91 00000 00000'
+        };
+
+        // Save to LocalStorage leads pool
+        const existingLeads = JSON.parse(localStorage.getItem('cc_leads') || '[]');
+        localStorage.setItem('cc_leads', JSON.stringify([newLead, ...existingLeads]));
+
         setRequestSent(true);
         setTimeout(() => {
             setIsRequestModalOpen(false);
             setRequestSent(false);
             setRequestText('');
-            navigate('/user/profile'); // Navigate to profile to see sent request
+            setRequestBudget('');
+            navigate('/user/profile');
         }, 1500);
     };
 
@@ -237,6 +265,24 @@ const ProviderProfile = () => {
                                         transition: 'all 0.2s'
                                     }}
                                 />
+
+                                <div style={{ marginBottom: '24px' }}>
+                                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '700', color: '#1F2937', margin: '0 0 8px 0' }}>Estimate Budget (Optional)</p>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#6B7280', fontWeight: 'bold' }}>₹</span>
+                                        <input
+                                            type="number"
+                                            placeholder="Enter amount"
+                                            value={requestBudget}
+                                            onChange={(e) => setRequestBudget(e.target.value)}
+                                            style={{
+                                                width: '100%', padding: '14px 16px 14px 32px', background: '#F9FAFB',
+                                                borderRadius: '14px', border: '1.5px solid #F3F4F6', outline: 'none',
+                                                fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '600'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
 
                                 <div style={{ display: 'flex', gap: 12 }}>
                                     <button

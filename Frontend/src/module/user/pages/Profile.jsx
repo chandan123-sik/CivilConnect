@@ -16,6 +16,22 @@ const Profile = () => {
     const [showRate, setShowRate] = useState(false);
     const [rating, setRating] = useState(0);
 
+    // Dynamic CMS Data from Admin Dispute Center
+    const cmsData = React.useMemo(() => {
+        const saved = localStorage.getItem('cc_dynamic_cms');
+        return saved ? JSON.parse(saved) : {
+            policyPoints: [
+                { id: 1, title: 'Data Collection', desc: 'CivilConnect collects information to facilitate connections between clients and civil engineering experts.' },
+                { id: 2, title: 'Verified Experts', desc: 'All service providers undergo a verification process. We share your request details with selected experts.' },
+                { id: 3, title: 'Secure Communication', desc: 'Your contact details are protected. Direct messaging is used only for project-related coordination.' },
+                { id: 4, title: 'Payment Reference', desc: 'Pricing shown in materials and services are reference rates and subject to market fluctuations.' }
+            ],
+            ratingTitle: 'Enjoying CivilConnect?',
+            ratingDesc: 'Your feedback helps us provide better experts.'
+        };
+    }, []);
+
+
     const handleLogout = () => {
         localStorage.clear();
         navigate('/');
@@ -31,11 +47,27 @@ const Profile = () => {
         setShowEdit(false);
     };
 
-    // Dummy sent requests
-    const sentRequests = [
-        { id: 1, provider: 'Mr. Rajesh Kumar', role: 'Civil Contractor', date: '02 Mar 2026', status: 'Pending', price: '₹1,500/day' },
-        { id: 2, provider: 'Amit Sharma', role: 'Plumber', date: '28 Feb 2026', status: 'Accepted', price: '₹600/visit' },
-    ];
+    // Dynamic sent requests from localStorage
+    const sentRequests = React.useMemo(() => {
+        const saved = JSON.parse(localStorage.getItem('cc_leads') || '[]');
+        const real = saved.filter(lead => lead.client === clientName).map(lead => ({
+            id: lead.id,
+            provider: lead.providerName || lead.service,
+            role: lead.service,
+            date: lead.date,
+            status: lead.status.charAt(0).toUpperCase() + lead.status.slice(1),
+            price: lead.price || 'Negotiable'
+        }));
+
+        // Initial Mock if empty
+        if (real.length === 0) {
+            return [
+                { id: 1, provider: 'Mr. Rajesh Kumar', role: 'Civil Contractor', date: '02 Mar 2026', status: 'Pending', price: '₹1,500/day' },
+                { id: 2, provider: 'Amit Sharma', role: 'Plumber', date: '28 Feb 2026', status: 'Accepted', price: '₹600/visit' },
+            ];
+        }
+        return real;
+    }, [clientName]);
 
     return (
         <div style={{ paddingBottom: 80, background: '#F9FAFB' }}>
@@ -284,15 +316,14 @@ const Profile = () => {
                             <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: '800' }}>Privacy Policy</h3>
                         </div>
                         <div style={{ fontFamily: "'Inter', sans-serif", lineHeight: 1.6, color: '#4B5563' }}>
-                            <h4 style={{ color: '#111827', margin: '20px 0 10px' }}>1. Data Collection</h4>
-                            <p>CivilConnect collects information to facilitate connections between clients and civil engineering experts. This includes your name, location, and service history.</p>
-                            <h4 style={{ color: '#111827', margin: '20px 0 10px' }}>2. Verified Experts</h4>
-                            <p>All service providers undergo a verification process. We share your request details with selected experts to provide accurate quotations.</p>
-                            <h4 style={{ color: '#111827', margin: '20px 0 10px' }}>3. Secure Communication</h4>
-                            <p>Your contact details are protected. Direct messaging is used only for project-related coordination.</p>
-                            <h4 style={{ color: '#111827', margin: '20px 0 10px' }}>4. Payment Reference</h4>
-                            <p>Pricing shown in materials and services are reference rates and subject to market fluctuations.</p>
+                            {cmsData.policyPoints.map(point => (
+                                <div key={point.id}>
+                                    <h4 style={{ color: '#111827', margin: '20px 0 10px' }}>{point.id}. {point.title}</h4>
+                                    <p>{point.desc}</p>
+                                </div>
+                            ))}
                         </div>
+
                     </div>
                 </div>
             )}
@@ -302,19 +333,34 @@ const Profile = () => {
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }}>
                     <div style={{ background: '#fff', width: '100%', borderRadius: '32px 32px 0 0', padding: '32px 24px', animation: 'slideUp 0.3s ease-out', textAlign: 'center' }}>
                         <div style={{ width: '40px', height: '4px', background: '#E5E7EB', borderRadius: '2px', margin: '0 auto 24px' }} />
-                        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: '900', color: '#111827', marginBottom: 8 }}>Enjoying CivilConnect?</h3>
-                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', marginBottom: 24 }}>Your feedback helps us provide better experts.</p>
+                        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: '900', color: '#111827', marginBottom: 8 }}>{cmsData.ratingTitle}</h3>
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', marginBottom: 24 }}>{cmsData.ratingDesc}</p>
+
                         <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 32 }}>
                             {[1, 2, 3, 4, 5].map(s => (
-                                <button key={s} onClick={() => setRating(s)} style={{ border: 'none', background: 'none', fontSize: '36px', cursor: 'pointer' }}>
+                                <button
+                                    key={s}
+                                    onClick={() => setRating(prev => prev === s ? s - 1 : s)}
+                                    style={{ border: 'none', background: 'none', fontSize: '36px', cursor: 'pointer', transition: 'transform 0.2s active:scale-90' }}
+                                >
                                     {s <= rating ? '⭐' : '☆'}
                                 </button>
                             ))}
                         </div>
                         <button
                             onClick={() => {
+                                const currentRatings = JSON.parse(localStorage.getItem('cc_app_ratings') || '[]');
+                                const newRating = {
+                                    id: Date.now(),
+                                    name: user.name || 'Anonymous User',
+                                    role: 'User',
+                                    stars: rating,
+                                    time: 'Just now'
+                                };
+                                localStorage.setItem('cc_app_ratings', JSON.stringify([newRating, ...currentRatings]));
+
                                 setShowRate(false);
-                                setRating(0); // Reset for next time
+                                setRating(0);
                             }}
                             style={{ width: '100%', padding: '16px', borderRadius: '16px', background: rating > 0 ? '#7C3AED' : '#F3F4F6', color: rating > 0 ? '#fff' : '#9CA3AF', border: 'none', fontWeight: '800', cursor: rating > 0 ? 'pointer' : 'default', transition: 'all 0.3s' }}
                             disabled={rating === 0}

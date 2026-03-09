@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ShieldCheck, Star } from 'lucide-react';
 
 const ProviderProfile = () => {
     const [profile, setProfile] = useState({
@@ -28,6 +29,25 @@ const ProviderProfile = () => {
 
     // Add Work State
     const [isAddWorkOpen, setIsAddWorkOpen] = useState(false);
+    const [showPolicy, setShowPolicy] = useState(false);
+    const [showRate, setShowRate] = useState(false);
+    const [rating, setRating] = useState(0);
+
+    // Dynamic CMS Data from Admin Dispute Center
+    const cmsData = React.useMemo(() => {
+        const saved = localStorage.getItem('cc_dynamic_cms');
+        return saved ? JSON.parse(saved) : {
+            policyPoints: [
+                { id: 1, title: 'Data Collection', desc: 'CivilConnect collects information to facilitate connections between clients and civil engineering experts.' },
+                { id: 2, title: 'Verified Experts', desc: 'All service providers undergo a verification process. We share your request details with selected experts.' },
+                { id: 3, title: 'Secure Communication', desc: 'Your contact details are protected. Direct messaging is used only for project-related coordination.' },
+                { id: 4, title: 'Payment Reference', desc: 'Pricing shown in materials and services are reference rates and subject to market fluctuations.' }
+            ],
+            ratingTitle: 'Enjoying CivilConnect?',
+            ratingDesc: 'Your feedback helps us provide better experts.'
+        };
+    }, []);
+
     const [newWorkImg, setNewWorkImg] = useState(null);
     const [newWorkDesc, setNewWorkDesc] = useState('');
 
@@ -181,13 +201,46 @@ const ProviderProfile = () => {
                     )}
                 </div>
 
+                {/* ── Support & Settings ── */}
+                <div className="space-y-3">
+                    <p className="text-slate-400 text-[10px] font-[1000] uppercase tracking-[0.2em] px-1">Support & Growth</p>
+                    <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+                        <button
+                            onClick={() => setShowPolicy(true)}
+                            className="w-full p-4 flex items-center justify-between active:bg-slate-50 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#1E3A8A]">
+                                    <ShieldCheck size={18} />
+                                </div>
+                                <span className="text-slate-700 font-extrabold text-[15px]">Safety & Privacy Policy</span>
+                            </div>
+                            <span className="text-slate-300 text-xl font-light">›</span>
+                        </button>
+                        <hr className="border-slate-50 mx-4" />
+                        <button
+                            onClick={() => setShowRate(true)}
+                            className="w-full p-4 flex items-center justify-between active:bg-slate-50 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
+                                    <Star size={18} />
+                                </div>
+                                <span className="text-slate-700 font-extrabold text-[15px]">Rate CivilConnect App</span>
+                            </div>
+                            <span className="text-slate-300 text-xl font-light">›</span>
+                        </button>
+                    </div>
+                </div>
+
                 {/* ── Account Actions ── */}
                 <button
                     onClick={() => { localStorage.clear(); window.location.href = '/'; }}
-                    className="w-full py-4.5 rounded-xl bg-red-50 text-red-600 font-black text-[13px] uppercase tracking-[0.2em] border border-red-100 active:scale-95 transition-all outline-none shadow-sm mb-4"
+                    className="w-full py-4.5 rounded-xl bg-red-50 text-red-600 font-black text-[13px] uppercase tracking-[0.2em] border border-red-100 active:scale-95 transition-all outline-none shadow-sm mb-2"
                 >
                     Sign Out Account
                 </button>
+                <p className="text-center text-slate-400 text-[10px] font-black uppercase tracking-widest opacity-60">Version 2.0.4 Premium</p>
             </div>
 
             {/* ── Full Profile Edit Bottom Sheet ── */}
@@ -348,6 +401,86 @@ const ProviderProfile = () => {
                                 Upload to Gallery
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* ── Privacy Policy Page Overlay ── */}
+            {showPolicy && (
+                <div className="fixed inset-0 z-[1000] bg-white overflow-y-auto animate-in fade-in duration-300">
+                    <div className="p-6">
+                        <div className="flex items-center gap-4 mb-10">
+                            <button
+                                onClick={() => setShowPolicy(false)}
+                                className="bg-slate-50 text-slate-900 w-11 h-11 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm active:scale-90 transition-transform text-2xl"
+                            >
+                                ‹
+                            </button>
+                            <h3 className="text-slate-900 font-[1000] text-xl tracking-tight m-0">Privacy Policy</h3>
+                        </div>
+
+                        <div className="space-y-8 font-['Inter',sans-serif] text-slate-600 leading-relaxed">
+                            {cmsData.policyPoints.map((point, idx) => (
+                                <div key={point.id} className="animate-in slide-in-from-bottom-[10px] duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
+                                    <h4 className="text-slate-900 font-extrabold text-[17px] mb-2">{point.id}. {point.title}</h4>
+                                    <p className="text-[15px]">{point.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+
+
+                        <div className="mt-12 p-6 bg-slate-50 rounded-[32px] border border-slate-100">
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest text-center">Last Updated: March 2026</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Rate App Modal ── */}
+            {showRate && (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-md bg-white rounded-[40px] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-slate-900 font-[1000] text-xl tracking-tight m-0">{cmsData.ratingTitle}</h3>
+                            <button onClick={() => setShowRate(false)} className="text-slate-400 p-2 hover:bg-slate-50 rounded-full active:scale-90 transition-transform">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        <p className="text-slate-500 text-[14px] font-bold text-center mb-6">{cmsData.ratingDesc}</p>
+
+
+                        <div className="flex justify-center gap-4 mb-8">
+                            {[1, 2, 3, 4, 5].map(s => (
+                                <button
+                                    key={s}
+                                    onClick={() => setRating(prev => prev === s ? s - 1 : s)}
+                                    className="text-4xl active:scale-90 transition-transform"
+                                >
+                                    {s <= rating ? '⭐' : '☆'}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                const currentRatings = JSON.parse(localStorage.getItem('cc_app_ratings') || '[]');
+                                const newRating = {
+                                    id: Date.now(),
+                                    name: profile.name || 'Expert Provider',
+                                    role: 'Provider',
+                                    stars: rating,
+                                    time: 'Just now'
+                                };
+                                localStorage.setItem('cc_app_ratings', JSON.stringify([newRating, ...currentRatings]));
+
+                                setShowRate(false);
+                                setRating(0);
+                            }}
+                            disabled={rating === 0}
+                            className={`w-full py-5 rounded-2xl text-[12px] font-[1000] uppercase tracking-[0.2em] shadow-xl transition-all ${rating > 0 ? 'bg-[#1E3A8A] text-white shadow-blue-900/20' : 'bg-slate-100 text-slate-300 outline-none'}`}
+                        >
+                            Submit Application Review
+                        </button>
+                        <button onClick={() => setShowRate(false)} className="w-full mt-4 text-slate-400 font-black text-[11px] uppercase tracking-widest text-center">Later</button>
                     </div>
                 </div>
             )}

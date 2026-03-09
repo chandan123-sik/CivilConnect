@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ClipboardList, CheckCircle } from 'lucide-react';
-import { mockCategories, mockProviders } from '../mockData';
+import { mockCategories, mockProviders, mockMaterials } from '../mockData';
 
 const Home = () => {
     const navigate = useNavigate();
@@ -12,11 +12,15 @@ const Home = () => {
     const bannerRef = React.useRef(null);
     const [currentBanner, setCurrentBanner] = useState(0);
 
-    const banners = React.useMemo(() => [
-        { title: 'Premium Construction Materials', desc: 'Get daily updated rates for cement, steel and more.', img: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80' },
-        { title: 'Verified Expert Manpower', desc: 'Directly connect with top-rated contractors & engineers.', img: 'https://images.unsplash.com/photo-1503387762-592dea58ef21?w=800&q=80' },
-        { title: 'Secure & Direct Connection', desc: 'Connect directly with experts without middlemen.', img: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=80' }
-    ], []);
+    const banners = React.useMemo(() => {
+        const saved = localStorage.getItem('cc_home_banners');
+        if (saved) return JSON.parse(saved);
+        return [
+            { title: 'Premium Construction Materials', desc: 'Get daily updated rates for cement, steel and more.', img: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80' },
+            { title: 'Verified Expert Manpower', desc: 'Directly connect with top-rated contractors & engineers.', img: 'https://images.unsplash.com/photo-1503387762-592dea58ef21?w=800&q=80' },
+            { title: 'Secure & Direct Connection', desc: 'Connect directly with experts without middlemen.', img: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=80' }
+        ];
+    }, []);
 
     React.useEffect(() => {
         const interval = setInterval(() => {
@@ -240,6 +244,64 @@ const Home = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <span style={{ fontSize: '14px' }}>⭐</span>
                                 <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', color: '#1F2937' }}>{provider.rating || '4.5'}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* Popular Materials Horizontal Scroll */}
+            <section style={{ padding: '0 0 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 16 }}>
+                    <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
+                        Popular Materials
+                    </h2>
+                    <button
+                        onClick={() => navigate('/user/materials')}
+                        style={{ background: 'none', border: 'none', color: '#7C3AED', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+                    >
+                        View All
+                    </button>
+                </div>
+
+                <div style={{
+                    display: 'flex',
+                    gap: 16,
+                    overflowX: 'auto',
+                    padding: '4px 16px 10px',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none'
+                }} className="hide-scrollbar">
+                    {mockMaterials.slice(0, 4).map(m => (
+                        <div
+                            key={m.id}
+                            onClick={() => navigate('/user/materials')}
+                            style={{
+                                minWidth: 'calc((100% - 16px) / 2)',
+                                width: 'calc((100% - 16px) / 2)',
+                                background: '#fff',
+                                borderRadius: '20px',
+                                overflow: 'hidden',
+                                boxShadow: '0 8px 20px rgba(124, 58, 237, 0.05)',
+                                border: '1px solid rgba(124, 58, 237, 0.04)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column'
+                            }}
+                        >
+                            <div style={{ height: '90px', width: '100%', overflow: 'hidden', background: '#F3F4F6' }}>
+                                <img src={m.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" alt={m.name} />
+                            </div>
+                            <div style={{ padding: '12px' }}>
+                                <div style={{ fontSize: '10px', color: '#7C3AED', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.02em' }}>
+                                    {m.category}
+                                </div>
+                                <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '800', color: '#1F2937', margin: '0 0 4px 0', lineClamp: 1, overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 1 }}>
+                                    {m.name}
+                                </h4>
+                                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#10B981', margin: 0, fontWeight: '900' }}>
+                                    {m.price} <span style={{ color: '#6B7280', fontSize: '10px', fontWeight: '600' }}>{m.unit}</span>
+                                </p>
                             </div>
                         </div>
                     ))}

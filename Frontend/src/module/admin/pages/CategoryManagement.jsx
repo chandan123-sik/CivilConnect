@@ -1,36 +1,81 @@
 import React, { useState } from 'react';
 
 const initialCategories = [
-    { id: 'cat-001', label: 'Contractor', icon: '🏗️', color: 'bg-emerald-50', text: 'text-emerald-600', activeProviders: 45, status: 'Active' },
-    { id: 'cat-002', label: 'Engineer', icon: '⚙️', color: 'bg-blue-50', text: 'text-blue-600', activeProviders: 28, status: 'Active' },
-    { id: 'cat-003', label: 'Architect', icon: '📐', color: 'bg-indigo-50', text: 'text-indigo-600', activeProviders: 15, status: 'Active' },
-    { id: 'cat-004', label: 'Plumber', icon: '🔧', color: 'bg-cyan-50', text: 'text-cyan-600', activeProviders: 32, status: 'Pending Review' },
-    { id: 'cat-005', label: 'Electrician', icon: '⚡', color: 'bg-amber-50', text: 'text-amber-600', activeProviders: 24, status: 'Active' },
-    { id: 'cat-006', label: 'Labour', icon: '👷', color: 'bg-orange-50', text: 'text-orange-600', activeProviders: 120, status: 'Active' },
-    { id: 'cat-007', label: 'Vehicle Provider', icon: '🚛', color: 'bg-slate-50', text: 'text-slate-600', activeProviders: 18, status: 'Inactive' },
+    {
+        id: 'contractor', label: 'Contractor', icon: '🏗️', color: 'bg-emerald-50', text: 'text-emerald-600', activeProviders: 45, status: 'Active',
+        subCategories: ['Civil Contractor', 'Interior Contractor', 'Road Contractor', 'Electrical Contractor']
+    },
+    {
+        id: 'engineer', label: 'Engineer', icon: '⚙️', color: 'bg-blue-50', text: 'text-blue-600', activeProviders: 28, status: 'Active',
+        subCategories: ['Structural Engineer', 'Site Engineer', 'Civil Engineer']
+    },
+    {
+        id: 'architect', label: 'Architect', icon: '📐', color: 'bg-indigo-50', text: 'text-indigo-600', activeProviders: 15, status: 'Active',
+        subCategories: ['Residential Architect', 'Commercial Architect', 'Landscape Designer']
+    },
+    {
+        id: 'plumber', label: 'Plumber', icon: '🔧', color: 'bg-cyan-50', text: 'text-cyan-600', activeProviders: 32, status: 'Active',
+        subCategories: ['Pipe Fitting', 'Repairs & Maintenance']
+    },
+    { id: 'electrician', label: 'Electrician', icon: '⚡', color: 'bg-amber-50', text: 'text-amber-600', activeProviders: 24, status: 'Active', subCategories: ['Full Wiring', 'Solar Installation'] },
+    { id: 'labour', label: 'Labour', icon: '👷', color: 'bg-orange-50', text: 'text-orange-600', activeProviders: 120, status: 'Active', subCategories: ['Skilled Mason', 'Helpers/Unskilled'] },
+    { id: 'vehicle', label: 'Vehicle Provider', icon: '🚛', color: 'bg-slate-50', text: 'text-slate-600', activeProviders: 18, status: 'Active', subCategories: ['Dumper/Tipper', 'Crane Services', 'JCB'] },
 ];
 
 const CategoryManagement = () => {
-    const [categories, setCategories] = useState(initialCategories);
+    // Initialize from localStorage, fallback to hardcoded defaults
+    // Reset stale localStorage if IDs are old format (cat-001)
+    const [categories, setCategories] = useState(() => {
+        const saved = localStorage.getItem('cc_admin_categories');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // If old IDs detected, clear and use fresh defaults
+            if (parsed[0]?.id?.startsWith('cat-0')) {
+                localStorage.removeItem('cc_admin_categories');
+                return initialCategories;
+            }
+            return parsed;
+        }
+        return initialCategories;
+    });
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
-    const [formData, setFormData] = useState({ label: '', icon: '📂', status: 'Active' });
+    const [formData, setFormData] = useState({ label: '', icon: '📂', status: 'Active', subCategories: [] });
+    const [subCategoryInput, setSubCategoryInput] = useState('');
+    const [expandedCategoryId, setExpandedCategoryId] = useState(null);
 
-    // Filter Logic
-    const filteredCategories = categories.filter(cat =>
-        cat.label.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Save to localStorage every time categories list changes
+    React.useEffect(() => {
+        localStorage.setItem('cc_admin_categories', JSON.stringify(categories));
+    }, [categories]);
+
+    // Deep Search Filter Logic (Main Category + Sub-categories)
+    const filteredCategories = categories.filter(cat => {
+        const query = searchTerm.toLowerCase();
+        const matchesMain = cat.label.toLowerCase().includes(query);
+        const matchesSub = cat.subCategories?.some(sub =>
+            sub.toLowerCase().includes(query)
+        );
+        return matchesMain || matchesSub;
+    });
 
     const handleOpenAdd = () => {
         setEditingCategory(null);
-        setFormData({ label: '', icon: '📂', status: 'Active' });
+        setFormData({ label: '', icon: '📂', status: 'Active', subCategories: [] });
+        setSubCategoryInput('');
         setIsModalOpen(true);
     };
 
     const handleOpenEdit = (category) => {
         setEditingCategory(category);
-        setFormData({ label: category.label, icon: category.icon, status: category.status });
+        setFormData({
+            label: category.label,
+            icon: category.icon,
+            status: category.status,
+            subCategories: category.subCategories || []
+        });
+        setSubCategoryInput('');
         setIsModalOpen(true);
     };
 
@@ -119,21 +164,22 @@ const CategoryManagement = () => {
                     <div
                         key={cat.id}
                         style={{ animationDelay: `${idx * 50}ms` }}
-                        className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group animate-in slide-in-from-bottom-5 fade-in fill-mode-both"
+                        onClick={() => setExpandedCategoryId(expandedCategoryId === cat.id ? null : cat.id)}
+                        className={`bg-white border rounded-[32px] p-6 shadow-sm hover:shadow-xl transition-all duration-300 group animate-in slide-in-from-bottom-5 fade-in fill-mode-both cursor-pointer ${expandedCategoryId === cat.id ? 'border-emerald-500 ring-4 ring-emerald-500/5' : 'border-slate-100 hover:-translate-y-1'}`}
                     >
                         <div className="flex justify-between items-start mb-6">
                             <div className={`w-14 h-14 rounded-2xl ${cat.color} flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform duration-500 bg-opacity-50`}>
                                 {cat.icon}
                             </div>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
-                                    onClick={() => handleOpenEdit(cat)}
+                                    onClick={(e) => { e.stopPropagation(); handleOpenEdit(cat); }}
                                     className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(cat.id)}
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(cat.id); }}
                                     className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -142,7 +188,35 @@ const CategoryManagement = () => {
                         </div>
 
                         <h3 className="text-slate-900 font-extrabold text-lg mb-1 tracking-tight">{cat.label}</h3>
-                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50">
+
+                        {/* Sub-categories indicator */}
+                        <div className="flex items-center gap-2 mt-2">
+                            <div className="flex -space-x-1.5 overflow-hidden">
+                                {cat.subCategories?.slice(0, 3).map((_, i) => (
+                                    <div key={i} className="inline-block h-3 w-3 rounded-full ring-2 ring-white bg-slate-200" />
+                                ))}
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                {cat.subCategories?.length || 0} Specializations
+                            </span>
+                        </div>
+
+                        {/* Expanded Sub-categories List */}
+                        {expandedCategoryId === cat.id && (
+                            <div className="mt-6 pt-6 border-t border-slate-50 flex flex-wrap gap-2 animate-in slide-in-from-top-2 duration-300">
+                                {cat.subCategories?.length === 0 ? (
+                                    <p className="text-[10px] text-slate-400 italic">No specializations defined</p>
+                                ) : (
+                                    cat.subCategories?.map((sub, i) => (
+                                        <span key={i} className="px-2 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-black text-slate-600 uppercase tracking-tight">
+                                            {sub}
+                                        </span>
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-50">
                             <div>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Active Providers</p>
                                 <p className="text-slate-800 font-black text-sm">{cat.activeProviders}</p>
@@ -195,7 +269,61 @@ const CategoryManagement = () => {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-4">
+                                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Sub-categories Specialization</label>
+                                    <div className="space-y-3">
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={subCategoryInput}
+                                                onChange={(e) => setSubCategoryInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        if (subCategoryInput.trim()) {
+                                                            setFormData({ ...formData, subCategories: [...formData.subCategories, subCategoryInput.trim()] });
+                                                            setSubCategoryInput('');
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder="Add sub-category (e.g. Civil Contractor)"
+                                                className="flex-1 px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-emerald-500 outline-none transition-all"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (subCategoryInput.trim()) {
+                                                        setFormData({ ...formData, subCategories: [...formData.subCategories, subCategoryInput.trim()] });
+                                                        setSubCategoryInput('');
+                                                    }
+                                                }}
+                                                className="px-4 py-3 bg-slate-900 text-white rounded-xl font-bold text-[12px] active:scale-95 transition-all"
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 min-h-[40px] p-4 bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl">
+                                            {formData.subCategories.length === 0 ? (
+                                                <p className="text-[11px] text-slate-400 italic">No sub-categories added yet.</p>
+                                            ) : (
+                                                formData.subCategories.map((sub, i) => (
+                                                    <div key={i} className="flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-[12px] font-bold text-slate-700 shadow-sm transition-all hover:border-red-200 hover:text-red-500 group">
+                                                        {sub}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData({ ...formData, subCategories: formData.subCategories.filter((_, idx) => idx !== i) })}
+                                                            className="text-slate-300 group-hover:text-red-400 transition-colors"
+                                                        >
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Representative Icon</label>
                                         <div className="flex gap-2">

@@ -23,6 +23,7 @@ import DisputeCenter from './module/admin/pages/DisputeCenter';
 import SubscriptionPlans from './module/admin/pages/SubscriptionPlans';
 import RevenueDashboard from './module/admin/pages/RevenueDashboard';
 import MaterialsCatalog from './module/admin/pages/MaterialsCatalog';
+import BannerManagement from './module/admin/pages/BannerManagement';
 import AdminSettings from './module/admin/pages/AdminSettings';
 
 // Clean out unused legacy imports mapping to prior names
@@ -70,6 +71,7 @@ function App() {
           <Route path="subscriptions" element={<SubscriptionPlans />} />
           <Route path="revenue" element={<RevenueDashboard />} />
           <Route path="materials" element={<MaterialsCatalog />} />
+          <Route path="banners" element={<BannerManagement />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
 

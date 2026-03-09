@@ -6,9 +6,41 @@ const Categories = () => {
     const navigate = useNavigate();
     const [search, setSearch] = React.useState('');
 
-    const filteredCategories = mockCategories.filter(cat =>
-        cat.label.toLowerCase().includes(search.toLowerCase())
-    );
+    // Read from localStorage (set by Admin panel), fallback to mockData
+    const categories = React.useMemo(() => {
+        const saved = localStorage.getItem('cc_admin_categories');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Guard: if stale old IDs (cat-001 format), clear and use mockData
+            if (parsed.length > 0 && parsed[0]?.id?.startsWith('cat-')) {
+                localStorage.removeItem('cc_admin_categories');
+                return mockCategories;
+            }
+            return parsed
+                .filter(c => c.status === 'Active')
+                .map(c => ({
+                    id: c.id,
+                    label: c.label,
+                    icon: c.icon,
+                    color: '#F5F3FF',
+                    accent: '#7C3AED',
+                    subCategories: c.subCategories || []
+                }));
+        }
+        return mockCategories;
+    }, []);
+
+    // Smart search: matches main label OR any sub-category name
+    // subCategories can be strings (admin/localStorage) or objects {id,label} (mockData)
+    const filteredCategories = categories.filter(cat => {
+        const q = search.toLowerCase();
+        const matchesMain = cat.label.toLowerCase().includes(q);
+        const matchesSub = cat.subCategories?.some(s => {
+            const label = typeof s === 'string' ? s : s.label;
+            return label?.toLowerCase().includes(q);
+        });
+        return matchesMain || matchesSub;
+    });
 
     return (
         <div style={{ paddingBottom: 20 }}>

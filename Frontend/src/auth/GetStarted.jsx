@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const slides = [
+const defaultSlides = [
     {
         title: "Let's get started",
         desc: "Build your dream project with verified experts and quality materials today.",
@@ -22,6 +22,11 @@ const slides = [
 const GetStarted = () => {
     const navigate = useNavigate();
     const [currentSlide, setCurrentSlide] = useState(0);
+
+    const slides = React.useMemo(() => {
+        const saved = localStorage.getItem('cc_get_started_banners');
+        return saved ? JSON.parse(saved) : defaultSlides;
+    }, []);
 
     useEffect(() => {
         const interval = setInterval(() => {

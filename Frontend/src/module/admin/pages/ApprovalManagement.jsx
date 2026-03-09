@@ -186,44 +186,44 @@ const ApprovalManagement = () => {
             {/* ── Review Modal ── */}
             {selectedRequest && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedRequest(null)} />
-                    <div className="relative bg-white rounded-[40px] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedRequest(null)} />
+                    <div className="relative bg-white rounded-[40px] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
                         {/* Modal Header */}
-                        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
+                        <div className="p-7 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
                             <div>
-                                <h2 className="text-2xl font-[1000] text-slate-900 tracking-tighter">Case Audit: {selectedRequest.providerName}</h2>
-                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Verification workflow for internal onboarding</p>
+                                <h2 className="text-xl font-[1000] text-slate-900 tracking-tighter leading-none">Case Audit: {selectedRequest.providerName}</h2>
+                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1.5">Verification workflow for internal onboarding</p>
                             </div>
-                            <button onClick={() => setSelectedRequest(null)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                            <button onClick={() => setSelectedRequest(null)} className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
 
-                        <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                            <div className="grid grid-cols-2 gap-8 mb-10">
+                        <div className="p-7 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-2 gap-6 mb-8">
                                 <div>
-                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-3">Professional Bio</p>
-                                    <div className="space-y-4">
+                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-3">Professional Bio</p>
+                                    <div className="space-y-3.5">
                                         <div>
-                                            <p className="text-[11px] text-slate-500 font-bold mb-1">Field of Expertise</p>
-                                            <p className="text-sm font-black text-slate-900">{selectedRequest.category}</p>
+                                            <p className="text-[10px] text-slate-500 font-bold mb-0.5">Field of Expertise</p>
+                                            <p className="text-[13px] font-black text-slate-900">{selectedRequest.category}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[11px] text-slate-500 font-bold mb-1">Operating Location</p>
-                                            <p className="text-sm font-black text-slate-900">{selectedRequest.location}</p>
+                                            <p className="text-[10px] text-slate-500 font-bold mb-0.5">Operating Location</p>
+                                            <p className="text-[13px] font-black text-slate-900">{selectedRequest.location}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[11px] text-slate-500 font-bold mb-1">Experience Level</p>
-                                            <p className="text-sm font-black text-emerald-600">{selectedRequest.experience}</p>
+                                            <p className="text-[10px] text-slate-500 font-bold mb-0.5">Experience Level</p>
+                                            <p className="text-[13px] font-black text-emerald-600">{selectedRequest.experience}</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-3">Onboarding Choice</p>
-                                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                                        <p className="text-[11px] text-slate-500 font-bold mb-1 uppercase tracking-widest">Subscription Tier</p>
-                                        <p className="text-xl font-[1000] text-slate-900 mb-2">{selectedRequest.plan}</p>
-                                        <div className="flex items-center gap-2 text-emerald-600 font-bold text-[10px] uppercase">
+                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-3">Onboarding Choice</p>
+                                    <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                        <p className="text-[10px] text-slate-500 font-bold mb-0.5 uppercase tracking-widest">Subscription Tier</p>
+                                        <p className="text-lg font-[1000] text-slate-900 mb-1.5">{selectedRequest.plan}</p>
+                                        <div className="flex items-center gap-2 text-emerald-600 font-bold text-[9px] uppercase">
                                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                             Payment Authorized
                                         </div>
@@ -232,49 +232,72 @@ const ApprovalManagement = () => {
                             </div>
 
                             {/* Verification Documents Section */}
-                            <div className="mb-10">
-                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-4">Submitted Documentation</p>
-                                <div className="grid grid-cols-3 gap-4">
-                                    {selectedRequest.documents.map((doc, i) => (
-                                        <div key={i} className="group cursor-pointer">
-                                            <div className="aspect-video bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center group-hover:border-emerald-500 group-hover:bg-emerald-50 transition-all">
-                                                <svg className="w-8 h-8 text-slate-300 group-hover:text-emerald-500 mb-2 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                                <span className="text-[10px] font-black text-slate-400 group-hover:text-emerald-600 uppercase text-center px-4">{doc}</span>
-                                            </div>
+                            <div className="mb-8">
+                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-4">Identity & Legal Documents</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Aadhar Display */}
+                                    <div className="group cursor-default">
+                                        <div className="aspect-[16/10] bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center group-hover:border-emerald-500 transition-all overflow-hidden relative">
+                                            {localStorage.getItem('provider_aadhar_image') ? (
+                                                <img
+                                                    src={localStorage.getItem('provider_aadhar_image')}
+                                                    alt="Aadhar"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <span className="text-[8px] font-black text-slate-400 uppercase">Aadhar Missing</span>
+                                            )}
+                                            <div className="absolute top-2 left-2 bg-emerald-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow">AADHAR</div>
                                         </div>
-                                    ))}
+                                    </div>
+
+                                    {/* Police Verification Display */}
+                                    <div className="group cursor-default">
+                                        <div className="aspect-[16/10] bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center group-hover:border-blue-500 transition-all overflow-hidden relative">
+                                            {localStorage.getItem('provider_police_verify_image') ? (
+                                                <img
+                                                    src={localStorage.getItem('provider_police_verify_image')}
+                                                    alt="Police Verify"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <span className="text-[8px] font-black text-slate-400 uppercase">Police Cert Missing</span>
+                                            )}
+                                            <div className="absolute top-2 left-2 bg-blue-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow">POLICE VERIFY</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Internal Audit Notes */}
                             <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Internal Reviewer Notes</label>
+                                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Internal Reviewer Notes</label>
                                 <textarea
-                                    className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-50 rounded-3xl text-[13px] font-bold text-slate-800 h-24 focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none"
+                                    className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[12px] font-bold text-slate-800 h-20 focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none"
                                     placeholder="Add notes for team reference..."
                                 />
                             </div>
                         </div>
 
                         {/* Modal Footer Actions */}
-                        <div className="p-8 bg-slate-50 border-t border-slate-100 grid grid-cols-3 gap-4">
+                        <div className="p-7 bg-slate-50 border-t border-slate-100 grid grid-cols-3 gap-3">
                             <button
                                 onClick={() => handleAction(selectedRequest.id, 'On-Hold')}
-                                className="py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:border-amber-400 hover:text-amber-600 transition-all shadow-sm active:scale-95"
+                                className="py-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-amber-400 hover:text-amber-600 transition-all shadow-sm active:scale-95"
                             >
-                                Put On-Hold
+                                On-Hold
                             </button>
                             <button
                                 onClick={() => handleAction(selectedRequest.id, 'Rejected')}
-                                className="py-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95"
+                                className="py-3.5 bg-red-50 border border-red-100 text-red-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95"
                             >
-                                Final Reject
+                                Reject
                             </button>
                             <button
                                 onClick={() => handleAction(selectedRequest.id, 'Approved')}
-                                className="py-4 bg-emerald-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95"
+                                className="py-3.5 bg-emerald-600 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95"
                             >
-                                Confirm Approve
+                                Approve
                             </button>
                         </div>
                     </div>

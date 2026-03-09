@@ -10,30 +10,111 @@ const AdminDashboard = () => {
         { label: 'Live Service Leads', value: '145', sub: 'Active today', icon: '🚀', color: 'bg-blue-50 text-blue-600' },
     ];
 
-    const recentActivities = [
-        { id: 1, type: 'signup', user: 'Amit Patel', msg: 'Started a new Expert profile', time: '2 mins ago', icon: '👤' },
-        { id: 2, type: 'payment', user: 'Rajesh Kumar', msg: 'Renewed Annual Elite Plan', time: '15 mins ago', icon: '💎' },
-        { id: 3, type: 'lead', user: 'Sneha Rao', msg: 'Requested a Civil Engineer lead', time: '1h ago', icon: '⚡' },
-        { id: 4, type: 'approval', user: 'Vikram Singh', msg: 'Expert verification approved', time: '3h ago', icon: '✅' },
-    ];
+    // Dynamic Logic: Load real leads from localStorage to make the dashboard ALIVE
+    const [realLeads] = React.useState(() => JSON.parse(localStorage.getItem('cc_leads') || '[]'));
 
-    const [isNotificationOn, setIsNotificationOn] = useState(true);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [showAuditLog, setShowAuditLog] = useState(false);
+    const [hiddenNotifIds, setHiddenNotifIds] = useState([]);
+
+    // Dynamic Notifications based on real activity
+    const notifications = React.useMemo(() => {
+        const baseNotifications = [
+            { id: 'b1', title: 'Platform Health', desc: 'System status is optimal.', time: 'Now', priority: 'low' },
+            { id: 'b2', title: 'New Provider Signup', desc: 'Suresh Carpentry is waiting for verification.', time: '2m ago', priority: 'high' },
+            { id: 'b3', title: 'Payment Successful', desc: 'Rajesh Kumar paid ₹2,500 for Elite Plan.', time: '15m ago', priority: 'medium' },
+            { id: 'b4', title: 'Lead Response Delay', desc: '3 leads in Mumbai have no responses.', time: '1h ago', priority: 'low' },
+            { id: 'b5', title: 'Database Backup', desc: 'Daily backup completed successfully.', time: '3h ago', priority: 'low' },
+            { id: 'b6', title: 'Dispute Resolved', desc: 'Payment dispute #4022 resolved.', time: '5h ago', priority: 'medium' },
+        ];
+        // Add new leads to notifications
+        const leadNotifications = realLeads.slice(0, 3).map(lead => ({
+            id: `lead-${lead.id}`,
+            title: 'New Service Lead',
+            desc: `${lead.client} requested ${(lead.service || '').slice(0, 20)}...`,
+            time: lead.date,
+            priority: 'high'
+        }));
+        return [...leadNotifications, ...baseNotifications].filter(n => !hiddenNotifIds.includes(n.id));
+    }, [realLeads, hiddenNotifIds]);
+
+    const handleClearAllNotifs = () => {
+        setHiddenNotifIds(prev => [...prev, ...notifications.map(n => n.id)]);
+    };
+
+    // State for Audit Global Feed items
+    const [auditFeed, setAuditFeed] = useState(() => 
+        [...Array(12)].map((_, i) => ({
+            id: `audit-${1082 - i}`,
+            eventNum: 1082 - i,
+            time: `${Math.floor(i * 5.2)} mins ago`,
+            title: ['User Signup', 'Lead Created', 'Subscription Paid', 'Expert Approved', 'Dispute Opened', 'Profile Updated'][i % 6],
+            desc: 'Dynamic activity logged by the system regarding platform growth and user engagement metrics.'
+        }))
+    );
+
+    const handleRemoveAuditItem = (id) => {
+        setAuditFeed(prev => prev.filter(item => item.id !== id));
+    };
+
+    // Dynamic Activities Feed
+    const recentActivities = React.useMemo(() => {
+        const leadActivities = realLeads.slice(0, 2).map(lead => ({
+            id: lead.id,
+            type: 'lead',
+            user: lead.client,
+            msg: `Requested: ${lead.service}`,
+            time: lead.date,
+            icon: '🚀'
+        }));
+
+        const baseActivities = [
+            { id: 99, type: 'signup', user: 'Amit Patel', msg: 'Started a new Expert profile', time: '2 mins ago', icon: '👤' },
+            { id: 100, type: 'payment', user: 'Rajesh Kumar', msg: 'Renewed Annual Elite Plan', time: '15 mins ago', icon: '💎' },
+        ];
+        return [...leadActivities, ...baseActivities];
+    }, [realLeads]);
 
     return (
-        <div className="max-w-7xl mx-auto pb-10 animate-in fade-in duration-500">
+        <div className="max-w-7xl mx-auto pb-10 animate-in fade-in duration-500 relative">
             {/* ── Welcome Header ── */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
                     <h1 className="text-slate-900 text-4xl font-[1000] tracking-tighter mb-1">Welcome back, Chandan!</h1>
                     <p className="text-slate-500 text-sm font-medium">Your platform is performing <span className="text-emerald-600 font-bold">14.2% better</span> than last month.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 relative">
                     <button
-                        onClick={() => setIsNotificationOn(!isNotificationOn)}
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isNotificationOn ? 'bg-emerald-50 text-emerald-600 shadow-lg shadow-emerald-500/10' : 'bg-slate-100 text-slate-400'}`}
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all relative ${showNotifications ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-500/20 rotate-12' : 'bg-white border border-slate-200 text-slate-400 hover:border-emerald-300'}`}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                        {notifications.length > 0 && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-bounce" />
+                        )}
                     </button>
+
+                    {/* Premium Notification Center */}
+                    {showNotifications && (
+                        <div className="absolute top-16 right-0 w-[280px] bg-white rounded-[24px] shadow-2xl border border-slate-100 p-5 z-[500] animate-in zoom-in-95 slide-in-from-top-4 duration-300">
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="text-slate-900 font-black text-xs uppercase tracking-widest">Notifications</h4>
+                                <button onClick={handleClearAllNotifs} className="text-[9px] font-bold text-emerald-600 uppercase hover:underline">Clear All</button>
+                            </div>
+                            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {notifications.map(n => (
+                                    <div key={n.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-emerald-200 transition-colors cursor-pointer group">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <p className="text-[11px] font-black text-slate-800 group-hover:text-emerald-700">{n.title}</p>
+                                            <span className="text-[8px] text-slate-400 font-bold">{n.time}</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 leading-relaxed font-medium">{n.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="h-10 w-px bg-slate-200 mx-2" />
                     <div className="text-right">
                         <p className="text-slate-900 font-black text-sm uppercase tracking-widest">{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
@@ -140,12 +221,63 @@ const AdminDashboard = () => {
                         ))}
                     </div>
 
-                    <button className="w-full py-4 mt-8 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] transition-all active:scale-95 shadow-lg shadow-emerald-500/20 relative z-10 outline-none">
+                    <button
+                        onClick={() => setShowAuditLog(true)}
+                        className="w-full py-4 mt-8 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] transition-all active:scale-95 shadow-lg shadow-emerald-500/20 relative z-10 outline-none"
+                    >
                         Audit Global Feed
                     </button>
                 </div>
 
             </div>
+
+            {/* ── Global Audit Feed Drawer ── */}
+            {showAuditLog && (
+                <div className="fixed inset-0 z-[1000] flex justify-end animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuditLog(false)} />
+                    <div className="relative w-full max-w-md bg-[#0F172A] shadow-2xl p-8 overflow-y-auto animate-in slide-in-from-right duration-500 ease-out">
+                        <div className="flex items-center justify-between mb-10">
+                            <div>
+                                <h3 className="text-white font-[1000] text-2xl tracking-tight">Audit Global Feed</h3>
+                                <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Full Activity Perspective</p>
+                            </div>
+                            <button onClick={() => setShowAuditLog(false)} className="w-10 h-10 rounded-xl bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-colors">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {auditFeed.length > 0 ? auditFeed.map((item) => (
+                                <div key={item.id} className="relative p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-emerald-500/30 transition-all group cursor-default">
+                                    <button 
+                                        onClick={() => handleRemoveAuditItem(item.id)}
+                                        className="absolute top-4 right-4 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Dismiss Activity"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                    <div className="flex justify-between items-center mb-2 pr-6">
+                                        <span className="text-emerald-400 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-emerald-500/10 rounded-lg">Event #{item.eventNum}</span>
+                                        <span className="text-slate-500 text-[10px] font-bold uppercase">{item.time}</span>
+                                    </div>
+                                    <p className="text-white font-black text-sm tracking-tight mb-1">{item.title}</p>
+                                    <p className="text-slate-400 text-[11px] leading-relaxed pr-6">{item.desc}</p>
+                                </div>
+                            )) : (
+                                <div className="text-center py-10 opacity-50">
+                                    <p className="text-emerald-400 text-sm font-bold uppercase tracking-widest mb-2">Feed Cleared</p>
+                                    <p className="text-slate-400 text-xs">No recent global activities to display.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-10 p-6 rounded-[24px] bg-gradient-to-br from-emerald-600/20 to-transparent border border-emerald-500/20">
+                            <p className="text-emerald-400 font-black text-xs uppercase tracking-widest mb-2">System Insight</p>
+                            <p className="text-slate-400 text-[11px] leading-relaxed italic">"Global feed items are archived every 24 hours to maintain system performance. Detailed logs can be exported from the Revenue section."</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Quick Action Shortcuts ── */}
             <div className="mt-10 pt-10 border-t border-slate-100 grid grid-cols-2 md:grid-cols-4 gap-4">

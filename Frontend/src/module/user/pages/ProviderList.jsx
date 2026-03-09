@@ -5,13 +5,33 @@ import { mockProviders, mockCategories } from '../mockData';
 const ProviderList = () => {
     const { categoryId } = useParams();
     const navigate = useNavigate();
-    const category = mockCategories.find(c => c.id === categoryId);
+
+    // Read category from localStorage (admin-managed), fallback to mockData
+    const category = React.useMemo(() => {
+        const saved = localStorage.getItem('cc_admin_categories');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Guard: stale old IDs → clear and use mockData
+            if (parsed.length > 0 && parsed[0]?.id?.startsWith('cat-')) {
+                localStorage.removeItem('cc_admin_categories');
+                return mockCategories.find(c => c.id === categoryId);
+            }
+            const found = parsed.find(c => c.id === categoryId);
+            if (found) return {
+                ...found,
+                subCategories: (found.subCategories || []).map((s, i) => ({ id: `sub-${i}`, label: s }))
+            };
+        }
+        return mockCategories.find(c => c.id === categoryId);
+    }, [categoryId]);
 
     const [filter, setFilter] = useState('all'); // all, available, busy
     const [sortBy, setSortBy] = useState('exp'); // exp, price
+    const [subCategoryId, setSubCategoryId] = useState('all');
 
     const providers = mockProviders
         .filter(p => p.categoryId === categoryId)
+        .filter(p => subCategoryId === 'all' || p.subCategoryId === subCategoryId)
         .filter(p => filter === 'all' || p.availability === filter)
         .sort((a, b) => {
             if (sortBy === 'exp') return b.experience - a.experience;
@@ -52,6 +72,39 @@ const ProviderList = () => {
                     </div>
                 </div>
 
+                {/* Sub-categories Horizontal Scroll */}
+                {category?.subCategories && (
+                    <div style={{ display: 'flex', gap: 10, overflowX: 'auto', marginBottom: 18, paddingBottom: 4 }} className="hide-scrollbar">
+                        <button
+                            onClick={() => setSubCategoryId('all')}
+                            style={{
+                                padding: '8px 18px', borderRadius: '14px', border: 'none',
+                                background: subCategoryId === 'all' ? '#fff' : 'rgba(255,255,255,0.1)',
+                                color: subCategoryId === 'all' ? '#7C3AED' : '#fff',
+                                fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap',
+                                transition: 'all 0.3s ease'
+                            }}
+                        >
+                            All {category.label}s
+                        </button>
+                        {category.subCategories.map(sub => (
+                            <button
+                                key={sub.id}
+                                onClick={() => setSubCategoryId(sub.id)}
+                                style={{
+                                    padding: '8px 18px', borderRadius: '14px', border: 'none',
+                                    background: subCategoryId === sub.id ? '#fff' : 'rgba(255,255,255,0.1)',
+                                    color: subCategoryId === sub.id ? '#7C3AED' : '#fff',
+                                    fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap',
+                                    transition: 'all 0.3s ease'
+                                }}
+                            >
+                                {sub.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 {/* Filters & Sorting */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }} className="hide-scrollbar">
@@ -74,27 +127,6 @@ const ProviderList = () => {
                                 }}
                             >
                                 {f}
-                            </button>
-                        ))}
-                        <div style={{ width: '1px', background: '#E5E7EB', margin: '4px 4px' }} />
-                        {['exp', 'price'].map(s => (
-                            <button
-                                key={s}
-                                onClick={() => setSortBy(s)}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '12px',
-                                    border: 'none',
-                                    background: sortBy === s ? 'rgba(124, 58, 237, 0.1)' : 'transparent',
-                                    color: sortBy === s ? '#7C3AED' : '#9CA3AF',
-                                    fontFamily: "'Inter', sans-serif",
-                                    fontSize: '12px',
-                                    fontWeight: '700',
-                                    cursor: 'pointer',
-                                    whiteSpace: 'nowrap'
-                                }}
-                            >
-                                Sort by {s === 'exp' ? 'Experience' : 'Price'}
                             </button>
                         ))}
                     </div>

@@ -1,20 +1,68 @@
 // ─── CivilConnect Client Panel — Mock Data ───────────────────────────────────
 
 // 7 Service Categories (admin-defined)
+// 7 Service Categories (admin-defined) with Sub-categories logic
 export const mockCategories = [
-  { id: 'contractor', label: 'Contractor', icon: '🏗️', color: '#F5F3FF', accent: '#7C3AED' },
-  { id: 'engineer', label: 'Engineer', icon: '⚙️', color: '#F5F3FF', accent: '#8B5CF6' },
-  { id: 'architect', label: 'Architect', icon: '📐', color: '#F5F3FF', accent: '#A78BFA' },
-  { id: 'plumber', label: 'Plumber', icon: '🔧', color: '#F5F3FF', accent: '#C4B5FD' },
-  { id: 'electrician', label: 'Electrician', icon: '⚡', color: '#F5F3FF', accent: '#8B5CF6' },
-  { id: 'labour', label: 'Labour', icon: '👷', color: '#F5F3FF', accent: '#7C3AED' },
-  { id: 'vehicle', label: 'Vehicle Provider', icon: '🚛', color: '#F5F3FF', accent: '#A78BFA' },
+  { 
+    id: 'contractor', label: 'Contractor', icon: '🏗️', color: '#F5F3FF', accent: '#7C3AED',
+    subCategories: [
+      { id: 'civil', label: 'Civil Contractor' },
+      { id: 'interior', label: 'Interior Contractor' },
+      { id: 'road', label: 'Road Contractor' },
+      { id: 'electrical_c', label: 'Electrical Contractor' }
+    ]
+  },
+  { 
+    id: 'engineer', label: 'Engineer', icon: '⚙️', color: '#F5F3FF', accent: '#8B5CF6',
+    subCategories: [
+      { id: 'structural', label: 'Structural Engineer' },
+      { id: 'site_eng', label: 'Site Engineer' },
+      { id: 'civil_eng', label: 'Civil Engineer' }
+    ]
+  },
+  { 
+    id: 'architect', label: 'Architect', icon: '📐', color: '#F5F3FF', accent: '#A78BFA',
+    subCategories: [
+      { id: 'residential', label: 'Residential Architect' },
+      { id: 'commercial', label: 'Commercial Architect' },
+      { id: 'landscape', label: 'Landscape Designer' }
+    ]
+  },
+  { 
+    id: 'plumber', label: 'Plumber', icon: '🔧', color: '#F5F3FF', accent: '#C4B5FD',
+    subCategories: [
+      { id: 'fitting', label: 'Pipe Fitting' },
+      { id: 'maintenance', label: 'Repairs & Maintenance' }
+    ]
+  },
+  { 
+    id: 'electrician', label: 'Electrician', icon: '⚡', color: '#F5F3FF', accent: '#8B5CF6',
+    subCategories: [
+      { id: 'wiring', label: 'Full Wiring' },
+      { id: 'solar', label: 'Solar Installation' }
+    ]
+  },
+  { 
+    id: 'labour', label: 'Labour', icon: '👷', color: '#F5F3FF', accent: '#7C3AED',
+    subCategories: [
+      { id: 'skilled', label: 'Skilled Mason' },
+      { id: 'unskilled', label: 'Helpers/Unskilled' }
+    ]
+  },
+  { 
+    id: 'vehicle', label: 'Vehicle Provider', icon: '🚛', color: '#F5F3FF', accent: '#A78BFA',
+    subCategories: [
+      { id: 'tipper', label: 'Dumper/Tipper' },
+      { id: 'crane', label: 'Crane Services' },
+      { id: 'jcb', label: 'Excavators/JCB' }
+    ]
+  },
 ];
 
-// 12 Mock Providers
+// 12 Mock Providers (Updated with sub-categories)
 export const mockProviders = [
   {
-    id: 'p1', categoryId: 'contractor',
+    id: 'p1', categoryId: 'contractor', subCategoryId: 'civil',
     name: 'Ramesh Sharma', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&q=80',
     role: 'General Contractor', experience: 12, location: 'Pune, MH',
     skills: ['Civil Work', 'RCC', 'Flooring'],
@@ -27,7 +75,7 @@ export const mockProviders = [
     ],
   },
   {
-    id: 'p2', categoryId: 'contractor',
+    id: 'p2', categoryId: 'contractor', subCategoryId: 'interior',
     name: 'Suresh Patil', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
     role: 'Interior Contractor', experience: 8, location: 'Mumbai, MH',
     skills: ['Tiling', 'Painting', 'POP Work'],
@@ -39,7 +87,7 @@ export const mockProviders = [
     ],
   },
   {
-    id: 'p3', categoryId: 'engineer',
+    id: 'p3', categoryId: 'engineer', subCategoryId: 'structural',
     name: 'Anjali Mehta', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80',
     role: 'Civil Engineer', experience: 6, location: 'Nagpur, MH',
     skills: ['Structural Design', 'AutoCAD', 'Site Supervision'],
@@ -51,7 +99,7 @@ export const mockProviders = [
     ],
   },
   {
-    id: 'p4', categoryId: 'architect',
+    id: 'p4', categoryId: 'architect', subCategoryId: 'residential',
     name: 'Priya Desai', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&q=80',
     role: 'Architect', experience: 9, location: 'Pune, MH',
     skills: ['3D Design', 'SketchUp', 'Vastu Planning'],
@@ -63,19 +111,19 @@ export const mockProviders = [
     ],
   },
   {
-    id: 'p5', categoryId: 'plumber',
+    id: 'p5', categoryId: 'plumber', subCategoryId: 'fitting',
     name: 'Manoj Yadav', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
     role: 'Plumbing Expert', experience: 10, location: 'Nashik, MH',
     skills: ['Pipe Fitting', 'Drainage', 'Sanitation'],
     pricing: '₹600/day', pricingNote: 'Emergency service +₹200',
     availability: 'available', rating: 4.6,
-    bio: 'Certified plumber with 1  0 years of experience in residential and industrial plumbing solutions.',
+    bio: 'Certified plumber with 10 years of experience in residential and industrial plumbing solutions.',
     portfolio: [
       { id: 'pp9', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80', desc: 'Full bathroom plumbing setup' },
     ],
   },
   {
-    id: 'p6', categoryId: 'electrician',
+    id: 'p6', categoryId: 'electrician', subCategoryId: 'wiring',
     name: 'Raju Waghmare', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
     role: 'Electrical Contractor', experience: 7, location: 'Pune, MH',
     skills: ['Wiring', 'Panel Setup', 'Solar Fitting'],
@@ -87,7 +135,7 @@ export const mockProviders = [
     ],
   },
   {
-    id: 'p7', categoryId: 'labour',
+    id: 'p7', categoryId: 'labour', subCategoryId: 'skilled',
     name: 'Vijay Kamble', avatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=400&q=80',
     role: 'General Labour', experience: 5, location: 'Pune, MH',
     skills: ['Masonry', 'Concrete', 'Excavation'],
@@ -97,7 +145,7 @@ export const mockProviders = [
     portfolio: [],
   },
   {
-    id: 'p8', categoryId: 'vehicle',
+    id: 'p8', categoryId: 'vehicle', subCategoryId: 'tipper',
     name: 'Santosh Bhosale', avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80',
     role: 'Transport Provider', experience: 4, location: 'Mumbai, MH',
     skills: ['Heavy Transport', 'Material Delivery', 'Crane Op.'],
