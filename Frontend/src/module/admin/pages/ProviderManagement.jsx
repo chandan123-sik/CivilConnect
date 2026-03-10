@@ -90,6 +90,36 @@ const dummyProviders = [
         avatar: 'SC',
         panCard: 'VWXYZ7531S',
         aadhar: 'XXXX-XXXX-1122'
+    },
+    {
+        id: 'PRV-1048',
+        name: 'Modern Architects',
+        category: 'Architect',
+        phone: '+91 99988 77766',
+        email: 'info@modernarch.com',
+        joinDate: '20 Feb, 2024',
+        status: 'Active',
+        subscription: 'Pro',
+        rating: 4.7,
+        completedJobs: 32,
+        avatar: 'MA',
+        panCard: 'ABCDE5678G',
+        aadhar: 'XXXX-XXXX-9999'
+    },
+    {
+        id: 'PRV-1049',
+        name: 'Elite Painters',
+        category: 'Painter',
+        phone: '+91 88877 66655',
+        email: 'elite.painters@gmail.com',
+        joinDate: '01 Mar, 2024',
+        status: 'Active',
+        subscription: 'Basic',
+        rating: 4.4,
+        completedJobs: 88,
+        avatar: 'EP',
+        panCard: 'FGHIJ1234K',
+        aadhar: 'XXXX-XXXX-1111'
     }
 ];
 
@@ -110,6 +140,8 @@ const ProviderManagement = () => {
         status: 'Pending',
         subscription: 'Basic'
     });
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     // Filter Logic
     const filteredProviders = providers.filter(provider => {
@@ -119,6 +151,11 @@ const ProviderManagement = () => {
         const matchesCategory = provider.category.toLowerCase().includes(categoryFilter.toLowerCase());
         return matchesSearch && matchesStatus && matchesCategory;
     });
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredProviders.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedProviders = filteredProviders.slice(startIndex, startIndex + itemsPerPage);
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -233,7 +270,10 @@ const ProviderManagement = () => {
                             type="text"
                             placeholder="Search providers, business name..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
                             className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
                         />
                     </div>
@@ -251,7 +291,10 @@ const ProviderManagement = () => {
                                     type="text"
                                     placeholder="e.g. Architect..."
                                     value={categoryFilter}
-                                    onChange={(e) => setCategoryFilter(e.target.value)}
+                                    onChange={(e) => {
+                                        setCategoryFilter(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
                                     className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-[12px] font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
                                 />
                             </div>
@@ -262,7 +305,10 @@ const ProviderManagement = () => {
                             {['All', 'Active', 'Pending', 'Suspended'].map(status => (
                                 <button
                                     key={status}
-                                    onClick={() => setStatusFilter(status)}
+                                    onClick={() => {
+                                        setStatusFilter(status);
+                                        setCurrentPage(1);
+                                    }}
                                     className={`px-4 py-1.5 rounded-lg text-[12px] font-bold whitespace-nowrap transition-all ${statusFilter === status ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'} `}
                                 >
                                     {status}
@@ -285,8 +331,8 @@ const ProviderManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {filteredProviders.length > 0 ? (
-                                filteredProviders.map((provider) => (
+                            {paginatedProviders.length > 0 ? (
+                                paginatedProviders.map((provider) => (
                                     <tr key={provider.id} className="hover:bg-slate-50/80 transition-colors group">
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-4">
@@ -350,10 +396,44 @@ const ProviderManagement = () => {
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="5" className="py-12 text-center text-slate-500 font-bold">No providers found matching your filters.</td></tr>
+                                <tr><td colSpan="5" className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">No providers found matching your filters.</td></tr>
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Pagination Footer */}
+                <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
+                    <p className="text-[12px] font-medium text-slate-500">
+                        Showing <span className="font-bold text-slate-900">{paginatedProviders.length}</span> of <span className="font-bold text-slate-900">{filteredProviders.length}</span> providers
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i + 1}
+                                onClick={() => setCurrentPage(i + 1)}
+                                className={`w-10 h-10 rounded-xl text-[13px] font-[1000] transition-all ${currentPage === i + 1 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'} `}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 

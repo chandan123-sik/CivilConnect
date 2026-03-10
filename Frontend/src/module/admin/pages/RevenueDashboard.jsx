@@ -6,6 +6,13 @@ const initialTransactions = [
     { id: 'TXN-9823', source: 'Annual Elite', provider: 'Anjali Mehta', amount: '₹4,499', type: 'Subscription', date: '04 Mar 2026', status: 'Success' },
     { id: 'TXN-9824', source: 'Quarterly Pro', provider: 'Suresh Patil', amount: '₹1,299', type: 'Subscription', date: '04 Mar 2026', status: 'Blocked' },
     { id: 'TXN-9825', source: 'Lead Fee (Pro)', provider: 'Vikram Singh', amount: '₹150', type: 'Service Fee', date: '04 Mar 2026', status: 'Success' },
+    { id: 'TXN-9826', source: 'Lead Fee (Elite)', provider: 'Kunal Sikarwar', amount: '₹150', type: 'Service Fee', date: '03 Mar 2026', status: 'Success' },
+    { id: 'TXN-9827', source: 'Quarterly Pro', provider: 'Priya Verma', amount: '₹1,299', type: 'Subscription', date: '03 Mar 2026', status: 'Success' },
+    { id: 'TXN-9828', source: 'Standard Monthly', provider: 'Rahul Desai', amount: '₹499', type: 'Subscription', date: '02 Mar 2026', status: 'Success' },
+    { id: 'TXN-9829', source: 'Lead Fee (Pro)', provider: 'Sneha Patel', amount: '₹150', type: 'Service Fee', date: '02 Mar 2026', status: 'Success' },
+    { id: 'TXN-9830', source: 'Annual Elite', provider: 'Vikram Singh', amount: '₹4,499', type: 'Subscription', date: '01 Mar 2026', status: 'Success' },
+    { id: 'TXN-9831', source: 'Lead Fee (Elite)', provider: 'Neha Gupta', amount: '₹150', type: 'Service Fee', date: '01 Mar 2026', status: 'Success' },
+    { id: 'TXN-9832', source: 'Quarterly Pro', provider: 'Amit Sharma', amount: '₹1,299', type: 'Subscription', date: '28 Feb 2026', status: 'Success' },
 ];
 
 const revenueByRange = {
@@ -17,6 +24,21 @@ const revenueByRange = {
 
 const RevenueDashboard = () => {
     const [timeRange, setTimeRange] = useState('Month');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
+    // Filter Logic
+    const filteredTransactions = initialTransactions.filter(txn =>
+        txn.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        txn.provider.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        txn.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + itemsPerPage);
 
     return (
         <div className="max-w-7xl mx-auto pb-10 animate-in fade-in duration-500">
@@ -125,9 +147,28 @@ const RevenueDashboard = () => {
 
             {/* ── Transaction List ── */}
             <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-8 border-b border-slate-50">
-                    <h2 className="text-slate-900 font-[1000] text-xl tracking-tight">Recent Payment History</h2>
-                    <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">A list of the very latest transactions</p>
+                <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-slate-900 font-[1000] text-xl tracking-tight">Recent Payment History</h2>
+                        <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">A list of the very latest transactions</p>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative w-full md:w-80">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search transactions..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1); // Reset to first page on search
+                            }}
+                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-[13px] font-bold text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner"
+                        />
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -142,38 +183,74 @@ const RevenueDashboard = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {initialTransactions.map((txn) => (
-                                <tr key={txn.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="py-6 px-8">
-                                        <div className="flex flex-col">
-                                            <span className="text-slate-900 font-bold text-[14px]">{txn.source}</span>
-                                            <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">{txn.id}</span>
-                                        </div>
-                                    </td>
-                                    <td className="py-6 px-6">
-                                        <span className="text-slate-700 font-bold text-sm">{txn.provider}</span>
-                                    </td>
-                                    <td className="py-6 px-6">
-                                        <span className="text-slate-500 font-bold text-xs uppercase">{txn.date}</span>
-                                    </td>
-                                    <td className="py-6 px-6">
-                                        <span className="text-slate-900 font-black text-lg tracking-tighter">{txn.amount}</span>
-                                    </td>
-                                    <td className="py-6 px-8 text-right">
-                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${txn.status === 'Success' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                                            {txn.status}
-                                        </span>
+                            {paginatedTransactions.length > 0 ? (
+                                paginatedTransactions.map((txn) => (
+                                    <tr key={txn.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="py-6 px-8">
+                                            <div className="flex flex-col">
+                                                <span className="text-slate-900 font-bold text-[14px]">{txn.source}</span>
+                                                <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">{txn.id}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-6 px-6">
+                                            <span className="text-slate-700 font-bold text-sm">{txn.provider}</span>
+                                        </td>
+                                        <td className="py-6 px-6">
+                                            <span className="text-slate-500 font-bold text-xs uppercase">{txn.date}</span>
+                                        </td>
+                                        <td className="py-6 px-6">
+                                            <span className="text-slate-900 font-black text-lg tracking-tighter">{txn.amount}</span>
+                                        </td>
+                                        <td className="py-6 px-8 text-right">
+                                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${txn.status === 'Success' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
+                                                {txn.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="5" className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
+                                        No transactions found matching "{searchTerm}"
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
 
-                <div className="p-8 border-t border-slate-50 text-center">
-                    <button className="text-emerald-600 font-black text-[12px] uppercase tracking-[0.2em] hover:text-emerald-700 transition-colors">
-                        View All Platform Transactions &rsaquo;
-                    </button>
+                {/* Pagination Footer */}
+                <div className="p-6 border-t border-slate-50 bg-white flex items-center justify-between">
+                    <p className="text-[12px] font-medium text-slate-500">
+                        Showing <span className="font-bold text-slate-900">{paginatedTransactions.length}</span> of <span className="font-bold text-slate-900">{filteredTransactions.length}</span> entries
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i + 1}
+                                onClick={() => setCurrentPage(i + 1)}
+                                className={`w-10 h-10 rounded-xl text-[13px] font-[1000] transition-all ${currentPage === i + 1 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'} `}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

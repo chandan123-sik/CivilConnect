@@ -35,6 +35,7 @@ const OTPVerification = () => {
     const handleEnter = () => {
         if (!isReady) return;
         localStorage.setItem('access_token', 'temp_verified_token');
+        localStorage.setItem('user_phone', mobile);
         navigate('/auth/role-selection');
     };
 

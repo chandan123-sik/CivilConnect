@@ -10,6 +10,8 @@ const CreateProfessionalProfile = () => {
         about: '',
         specialities: '', // Tags (comma separated)
         pricing: '',
+        city: '',
+        address: '',
         recentWorkDesc: '',
     });
     const [profileImage, setProfileImage] = useState(null);
@@ -39,8 +41,8 @@ const CreateProfessionalProfile = () => {
     };
 
     const handleSubmit = () => {
-        if (!formData.fullName.trim() || !formData.experience.trim() || !formData.about.trim() || !formData.pricing.trim() || !profileImage || !aadharImage || !policeImage) {
-            setError('All fields including Photo, Aadhar, and Police Verification are mandatory.');
+        if (!formData.fullName.trim() || !formData.experience.trim() || !formData.about.trim() || !formData.pricing.trim() || !formData.city.trim() || !formData.address.trim() || !profileImage || !aadharImage || !policeImage) {
+            setError('All fields including City, Address, Photo, Aadhar, and Police Verification are mandatory.');
             return;
         }
 
@@ -51,6 +53,8 @@ const CreateProfessionalProfile = () => {
         localStorage.setItem('provider_about', formData.about.trim());
         localStorage.setItem('provider_specialities', formData.specialities.trim());
         localStorage.setItem('provider_pricing', formData.pricing.trim());
+        localStorage.setItem('provider_city', formData.city.trim());
+        localStorage.setItem('provider_address', formData.address.trim());
         localStorage.setItem('provider_work_desc', formData.recentWorkDesc.trim());
         if (workImage) localStorage.setItem('provider_work_image', workImage);
         if (profileImage) localStorage.setItem('provider_profile_image', profileImage);
@@ -146,6 +150,32 @@ const CreateProfessionalProfile = () => {
                                     value={formData.rating}
                                     onChange={handleInput}
                                     placeholder="4.9"
+                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
+                                />
+                            </div>
+                        </div>
+
+                        {/* City & Address */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-slate-700 text-[15px] font-bold block mb-1.5 px-1">Service City</label>
+                                <input
+                                    type="text"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleInput}
+                                    placeholder="e.g. Pune"
+                                    className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-slate-700 text-[15px] font-bold block mb-1.5 px-1">Service Area</label>
+                                <input
+                                    type="text"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleInput}
+                                    placeholder="e.g. Hinjewadi"
                                     className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:border-[#1E3A8A] focus:bg-white outline-none transition-all shadow-sm"
                                 />
                             </div>

@@ -3,9 +3,42 @@ import { useNavigate } from 'react-router-dom';
 
 const ProviderHome = () => {
     const [isOnline, setIsOnline] = useState(true);
+    const [showNotifs, setShowNotifs] = useState(false);
     const navigate = useNavigate();
     const providerName = localStorage.getItem('provider_name') || 'Ramesh Sharma';
     const profileImg = localStorage.getItem('provider_profile_image');
+
+    // Notification Logic: Load real leads from localStorage
+    const [notifications, setNotifications] = useState([]);
+
+    React.useEffect(() => {
+        const loadLeads = () => {
+            try {
+                const savedLeads = JSON.parse(localStorage.getItem('cc_leads') || '[]');
+                // Filter for pending leads specifically for this provider (or global if not specific)
+                const pending = savedLeads.filter(l => l.status === 'pending');
+                setNotifications(pending);
+            } catch (err) {
+                console.error("Failed to load leads:", err);
+            }
+        };
+
+        loadLeads();
+
+        // Sync with storage events
+        const handleStorage = (e) => {
+            if (!e || !e.key || e.key === 'cc_leads') {
+                loadLeads();
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        const interval = setInterval(loadLeads, 5000); // Polling as backup
+
+        return () => {
+            window.removeEventListener('storage', handleStorage);
+            clearInterval(interval);
+        };
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-10">
@@ -28,13 +61,103 @@ const ProviderHome = () => {
                             <h1 className="text-white text-xl font-[1000] tracking-tight">{providerName}</h1>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 relative">
                         <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${isOnline ? 'bg-green-400/20 text-green-400 border border-green-400/30' : 'bg-white/10 text-white/60 border border-white/10'}`}>
                             {isOnline ? 'Active' : 'Busy'}
                         </div>
-                        <button className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10 text-white active:scale-90 transition-transform">
+                        <button
+                            onClick={() => setShowNotifs(!showNotifs)}
+                            className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10 text-white active:scale-90 transition-transform relative"
+                        >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                            {notifications.length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-[#1E3A8A] animate-bounce">
+                                    {notifications.length}
+                                </span>
+                            )}
                         </button>
+
+                        {/* Premium Side Drawer Notifications */}
+                        {showNotifs && (
+                            <>
+                                {/* Backdrop */}
+                                <div
+                                    onClick={() => setShowNotifs(false)}
+                                    style={{
+                                        position: 'fixed', inset: 0,
+                                        background: 'rgba(0,0,0,0.3)',
+                                        backdropFilter: 'blur(4px)',
+                                        zIndex: 2000,
+                                        animation: 'fadeIn 0.3s ease'
+                                    }}
+                                />
+                                {/* Drawer */}
+                                <div style={{
+                                    position: 'fixed', top: 0, right: 0,
+                                    width: '85%', maxWidth: '340px', height: '100vh',
+                                    background: '#fff',
+                                    boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
+                                    zIndex: 3000,
+                                    display: 'flex', flexDirection: 'column',
+                                    animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                                }}>
+                                    <div style={{ padding: '24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '1000', color: '#1E3A8A', letterSpacing: '0.8px', textTransform: 'uppercase' }}>RECENT LEADS</h4>
+                                        <button
+                                            onClick={() => setShowNotifs(false)}
+                                            style={{ border: 'none', background: '#F8FAFC', width: '32px', height: '32px', borderRadius: '10px', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        >✕</button>
+                                    </div>
+
+                                    <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                        {notifications.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                                <div style={{ fontSize: '40px', marginBottom: 16 }}>🎯</div>
+                                                <p style={{ fontSize: '13px', color: '#94A3B8', fontWeight: '700' }}>No new leads today.</p>
+                                                <p style={{ fontSize: '11px', color: '#CBD5E1', mt: 4 }}>Stay online to catch new requests!</p>
+                                            </div>
+                                        ) : (
+                                            notifications.map((notif, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    onClick={() => { navigate('/serviceprovider/requests'); setShowNotifs(false); }}
+                                                    style={{
+                                                        padding: '18px', borderRadius: '20px', background: '#F8FAFC',
+                                                        border: '1px solid #F1F5F9', position: 'relative', cursor: 'pointer',
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                        <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '900', color: '#1E3A8A' }}>{notif.client}</h5>
+                                                        <span style={{ fontSize: '10px', fontWeight: '900', color: '#6366F1', textTransform: 'uppercase' }}>{notif.date}</span>
+                                                    </div>
+                                                    <p style={{ margin: '0 0 10px 0', fontSize: '12px', fontWeight: '600', color: '#64748B' }}>{notif.service}</p>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span style={{ fontSize: '12px', fontWeight: '1000', color: '#10B981' }}>{notif.price}</span>
+                                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6366F1', boxShadow: '0 0 8px rgba(99, 102, 241, 0.4)' }} />
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    <div style={{ padding: '20px', background: '#F8FAFC', borderTop: '1px solid #F1F5F9' }}>
+                                        <button
+                                            onClick={() => { setShowNotifs(false); navigate('/serviceprovider/requests'); }}
+                                            style={{
+                                                width: '100%', padding: '16px', borderRadius: '16px', border: 'none',
+                                                background: 'linear-gradient(135deg, #1E3A8A 0%, #4F46E5 100%)',
+                                                color: '#fff', fontSize: '12px', fontWeight: '1000', cursor: 'pointer',
+                                                boxShadow: '0 8px 20px rgba(30, 58, 138, 0.2)', textTransform: 'uppercase',
+                                                letterSpacing: '1px'
+                                            }}
+                                        >
+                                            VIEW ALL LEADS
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -146,6 +269,17 @@ const ProviderHome = () => {
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); }
+                    to { transform: translateX(0); }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };

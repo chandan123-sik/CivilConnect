@@ -49,24 +49,39 @@ const Profile = () => {
 
     // Dynamic sent requests from localStorage
     const sentRequests = React.useMemo(() => {
-        const saved = JSON.parse(localStorage.getItem('cc_leads') || '[]');
-        const real = saved.filter(lead => lead.client === clientName).map(lead => ({
+        const savedLeads = JSON.parse(localStorage.getItem('cc_leads') || '[]');
+        const materialOrders = JSON.parse(localStorage.getItem('cc_material_orders') || '[]');
+
+        const realLeads = savedLeads.filter(lead => lead.client === clientName).map(lead => ({
             id: lead.id,
             provider: lead.providerName || lead.service,
             role: lead.service,
             date: lead.date,
             status: lead.status.charAt(0).toUpperCase() + lead.status.slice(1),
-            price: lead.price || 'Negotiable'
+            price: lead.price || 'Negotiable',
+            isMaterial: false
         }));
 
+        const realMaterials = materialOrders.map(m => ({
+            id: m.id,
+            provider: m.brand,
+            role: m.materialName,
+            date: new Date(m.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+            status: m.status.charAt(0).toUpperCase() + m.status.slice(1),
+            price: `₹${m.totalPrice}`,
+            isMaterial: true
+        }));
+
+        const combined = [...realMaterials, ...realLeads];
+
         // Initial Mock if empty
-        if (real.length === 0) {
+        if (combined.length === 0) {
             return [
-                { id: 1, provider: 'Mr. Rajesh Kumar', role: 'Civil Contractor', date: '02 Mar 2026', status: 'Pending', price: '₹1,500/day' },
-                { id: 2, provider: 'Amit Sharma', role: 'Plumber', date: '28 Feb 2026', status: 'Accepted', price: '₹600/visit' },
+                { id: 1, provider: 'Mr. Rajesh Kumar', role: 'Civil Contractor', date: '02 Mar 2026', status: 'Pending', price: '₹1,500/day', isMaterial: false },
+                { id: 2, provider: 'UltraTech Cement', role: 'Cement', date: 'Just Now', status: 'Pending', price: '₹4,500', isMaterial: true },
             ];
         }
-        return real;
+        return combined.slice(0, 3); // Top 3 for profile view
     }, [clientName]);
 
     return (
@@ -159,8 +174,13 @@ const Profile = () => {
                             alignItems: 'center'
                         }}>
                             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                                    🏗️
+                                <div style={{
+                                    width: '44px', height: '44px', borderRadius: '12px',
+                                    background: req.isMaterial ? '#ECFDF5' : '#F5F3FF',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px',
+                                    border: `1px solid ${req.isMaterial ? '#D1FAE5' : '#EDE9FE'}`
+                                }}>
+                                    {req.isMaterial ? '📦' : '🏗️'}
                                 </div>
                                 <div>
                                     <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '800', color: '#111827', margin: '0 0 4px 0' }}>{req.provider}</h4>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ClipboardList, CheckCircle } from 'lucide-react';
 import { mockCategories, mockProviders, mockMaterials } from '../mockData';
@@ -11,6 +11,28 @@ const Home = () => {
 
     const bannerRef = React.useRef(null);
     const [currentBanner, setCurrentBanner] = useState(0);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [userNotifications, setUserNotifications] = useState([]);
+
+    const loadNotifications = () => {
+        const orders = JSON.parse(localStorage.getItem('cc_material_orders') || '[]');
+        // Only show updates for accepted/rejected orders
+        const updates = orders.filter(o => o.status !== 'pending').map(o => ({
+            id: o.id,
+            status: o.status,
+            brand: o.brand.name || o.brand,
+            deliveryTime: o.deliveryTime || 'N/A',
+            createdAt: o.createdAt
+        }));
+        setUserNotifications(updates.reverse());
+    };
+
+    useEffect(() => {
+        loadNotifications();
+        const handleStorage = () => loadNotifications();
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, []);
 
     const banners = React.useMemo(() => {
         const saved = localStorage.getItem('cc_home_banners');
@@ -52,7 +74,7 @@ const Home = () => {
         <div style={{ paddingBottom: 20 }}>
             {/* Header / Top Bar */}
             <header style={{
-                padding: '16px 20px 12px',
+                padding: '22px 20px 20px',
                 background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
                 borderRadius: '0 0 32px 32px',
                 boxShadow: '0 10px 30px rgba(124, 58, 237, 0.2)',
@@ -64,32 +86,126 @@ const Home = () => {
                 <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
-                    <div>
-                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: '0 0 4px 0', fontWeight: '600', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            Good day, <span style={{ fontSize: '18px' }}>👋</span>
+                    <div style={{ flex: 1, minWidth: 0, marginRight: 15 }}>
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: '0 0 4px 0', fontWeight: '800', display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
+                            Good day <span style={{ fontSize: '18px' }}>👋</span>
                         </p>
-                        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: '900', color: '#fff', margin: 0 }}>
+                        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: '900', color: '#fff', margin: 0, letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {userName}
                         </h1>
                     </div>
-                    <div style={{
-                        background: 'rgba(255,255,255,0.15)',
-                        backdropFilter: 'blur(10px)',
-                        padding: '8px 14px',
-                        borderRadius: '14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        border: '1px solid rgba(255,255,255,0.2)'
-                    }}>
-                        <span style={{ fontSize: '14px' }}>📍</span>
-                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: '700', color: '#fff' }}>{userCity}</span>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div style={{
+                            background: 'rgba(255,255,255,0.15)',
+                            backdropFilter: 'blur(10px)',
+                            padding: '8px 14px',
+                            borderRadius: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            border: '1px solid rgba(255,255,255,0.2)'
+                        }}>
+                            <span style={{ fontSize: '14px' }}>📍</span>
+                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: '700', color: '#fff' }}>{userCity}</span>
+                        </div>
+
+                        {/* Notification Bell */}
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => setShowNotifications(!showNotifications)}
+                                style={{
+                                    width: '38px', height: '38px', borderRadius: '12px',
+                                    background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                    transition: 'all 0.2s', position: 'relative', backdropFilter: 'blur(10px)'
+                                }}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" /></svg>
+                                {userNotifications.length > 0 && <span style={{ position: 'absolute', top: '8px', right: '8px', width: '7px', height: '7px', background: '#EF4444', borderRadius: '50%', border: '1.5px solid #7C3AED', boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)' }} />}
+                            </button>
+
+                            {/* Premium Side Drawer Notifications */}
+                            {showNotifications && (
+                                <>
+                                    {/* Backdrop */}
+                                    <div
+                                        onClick={() => setShowNotifications(false)}
+                                        style={{
+                                            position: 'fixed', inset: 0,
+                                            background: 'rgba(0,0,0,0.3)',
+                                            backdropFilter: 'blur(4px)',
+                                            zIndex: 2000,
+                                            animation: 'fadeIn 0.3s ease'
+                                        }}
+                                    />
+                                    {/* Drawer */}
+                                    <div style={{
+                                        position: 'fixed', top: 0, right: 0,
+                                        width: '85%', maxWidth: '340px', height: '100vh',
+                                        background: '#fff',
+                                        boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
+                                        zIndex: 3000,
+                                        display: 'flex', flexDirection: 'column',
+                                        animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+                                    }}>
+                                        <div style={{ padding: '24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '900', color: '#111827', letterSpacing: '0.5px' }}>NOTIFICATIONS</h4>
+                                            <button
+                                                onClick={() => setShowNotifications(false)}
+                                                style={{ border: 'none', background: '#F8FAFC', width: '32px', height: '32px', borderRadius: '10px', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            >✕</button>
+                                        </div>
+
+                                        <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                            {userNotifications.length === 0 ? (
+                                                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                                    <div style={{ fontSize: '40px', marginBottom: 16 }}>🔔</div>
+                                                    <p style={{ fontSize: '14px', color: '#94A3B8', fontWeight: '500' }}>No notifications yet.</p>
+                                                </div>
+                                            ) : (
+                                                userNotifications.map(notif => (
+                                                    <div key={notif.id} style={{ padding: '16px', borderRadius: '20px', background: notif.status === 'accepted' ? '#F0FDF4' : '#FEF2F2', border: '1px solid', borderColor: notif.status === 'accepted' ? '#DCFCE7' : '#FEE2E2', position: 'relative' }}>
+                                                        <div style={{ display: 'flex', gap: 12 }}>
+                                                            <div style={{
+                                                                width: '10px', height: '10px', borderRadius: '50%',
+                                                                background: notif.status === 'accepted' ? '#10B981' : '#EF4444',
+                                                                marginTop: '4px'
+                                                            }} />
+                                                            <div>
+                                                                <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '800', color: notif.status === 'accepted' ? '#166534' : '#991B1B' }}>
+                                                                    {notif.status === 'accepted' ? 'Order Confirmed' : 'Order Rejected'}
+                                                                </p>
+                                                                <p style={{ margin: 0, fontSize: '11px', fontWeight: '600', color: notif.status === 'accepted' ? '#15803D' : '#B91C1C', lineHeight: 1.5 }}>
+                                                                    {notif.brand}: {notif.status === 'accepted' ? `Your material is arriving in ${notif.deliveryTime}.` : 'The order was declined by admin.'}
+                                                                </p>
+                                                                <p style={{ margin: '8px 0 0', fontSize: '9px', fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase' }}>
+                                                                    {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+
+                                        <div style={{ padding: '20px', background: '#F8FAFC', borderTop: '1px solid #F1F5F9' }}>
+                                            <button
+                                                onClick={() => { setShowNotifications(false); navigate('/user/materials'); }}
+                                                style={{ width: '100%', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', color: '#fff', fontSize: '13px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 12px rgba(124, 58, 237, 0.2)' }}
+                                            >
+                                                VIEW ALL ORDERS
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </header>
+            </header >
 
             {/* Horizontal Promo Banners */}
-            <div style={{ position: 'relative', marginBottom: 0 }}>
+            < div style={{ position: 'relative', marginBottom: 0 }}>
                 <div
                     ref={bannerRef}
                     onScroll={handleScroll}
@@ -144,10 +260,10 @@ const Home = () => {
                         }} />
                     ))}
                 </div>
-            </div>
+            </div >
 
             {/* Horizontal Categories Scroll */}
-            <section style={{ padding: '0 0 0' }}>
+            < section style={{ padding: '0 0 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 10 }}>
                     <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
                         Categories
@@ -198,10 +314,10 @@ const Home = () => {
                         </div>
                     ))}
                 </div>
-            </section>
+            </section >
 
             {/* Popular Providers Horizontal Scroll */}
-            <section style={{ padding: '0 0 20px' }}>
+            < section style={{ padding: '0 0 20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 16 }}>
                     <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
                         Popular Experts
@@ -248,10 +364,10 @@ const Home = () => {
                         </div>
                     ))}
                 </div>
-            </section>
+            </section >
 
             {/* Popular Materials Horizontal Scroll */}
-            <section style={{ padding: '0 0 20px' }}>
+            < section style={{ padding: '0 0 20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 16 }}>
                     <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
                         Popular Materials
@@ -306,10 +422,10 @@ const Home = () => {
                         </div>
                     ))}
                 </div>
-            </section>
+            </section >
 
             {/* How It Works Section */}
-            <section style={{ padding: '10px 16px 20px' }}>
+            < section style={{ padding: '10px 16px 20px' }}>
                 <div style={{
                     background: '#fff',
                     borderRadius: '24px',
@@ -351,7 +467,7 @@ const Home = () => {
                         ))}
                     </div>
                 </div>
-            </section>
+            </section >
             <style>{`
                 .hide-scrollbar::-webkit-scrollbar { display: none; }
                 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -378,7 +494,7 @@ const Home = () => {
 
                 .category-card-hover:active { transform: scale(0.9); }
             `}</style>
-        </div>
+        </div >
     );
 };
 

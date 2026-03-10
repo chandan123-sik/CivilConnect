@@ -10,10 +10,44 @@ const ProviderProfile = () => {
     const [requestText, setRequestText] = useState('');
     const [requestBudget, setRequestBudget] = useState('');
 
-    const provider = mockProviders.find(p => p.id === providerId);
+    const allProviders = React.useMemo(() => {
+        const localProviders = [];
+        const localName = localStorage.getItem('provider_name');
+        if (localName) {
+            localProviders.push({
+                id: 'local-provider-unique', // Same ID used in ProviderList.jsx
+                name: localName,
+                role: localStorage.getItem('provider_category') || 'Expert Professional',
+                experience: localStorage.getItem('provider_experience') || '1',
+                rating: localStorage.getItem('provider_rating') || '4.8',
+                location: `${localStorage.getItem('provider_city') || 'Local'}, India`,
+                availability: 'available',
+                categoryId: localStorage.getItem('provider_category')?.toLowerCase() || 'contractor',
+                skills: (localStorage.getItem('provider_specialities') || 'Civil Work').split(',').map(s => s.trim()),
+                pricing: `₹${localStorage.getItem('provider_pricing') || '1000'}/day`,
+                avatar: localStorage.getItem('provider_profile_image'),
+                bio: localStorage.getItem('provider_about') || 'No Bio provided.',
+                portfolio: localStorage.getItem('provider_work_image') ? [{
+                    id: 'local-work-1',
+                    image: localStorage.getItem('provider_work_image'),
+                    desc: localStorage.getItem('provider_work_desc') || 'Project Showcase'
+                }] : []
+            });
+        }
+        return [...localProviders, ...mockProviders];
+    }, []);
+
+    const provider = allProviders.find(p => p.id === providerId);
     const category = mockCategories.find(c => c.id === provider?.categoryId);
 
-    if (!provider) return <div style={{ padding: 40, textAlign: 'center' }}>Provider not found.</div>;
+    if (!provider) return (
+        <div style={{ padding: '100px 40px', textAlign: 'center', background: '#F8FAFC', minHeight: '100vh' }}>
+            <div style={{ fontSize: '64px', marginBottom: '24px' }}>🔍</div>
+            <h2 style={{ color: '#1E293B', fontWeight: '900' }}>Expert Not Found</h2>
+            <p style={{ color: '#64748B', marginTop: '8px' }}>The profile you're looking for might have been removed.</p>
+            <button onClick={() => navigate(-1)} style={{ marginTop: '24px', background: '#1E3A8A', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: '12px', fontWeight: '800' }}>Go Back</button>
+        </div>
+    );
 
     const handleSendRequest = () => {
         if (!requestText.trim()) return;

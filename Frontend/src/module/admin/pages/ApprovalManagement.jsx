@@ -48,6 +48,30 @@ const initialRequests = [
         experience: '4 Years',
         location: 'Jaipur, Rajasthan',
         mobile: '+91 65432 10987'
+    },
+    {
+        id: 'APP-1005',
+        providerName: 'Sunita Rao',
+        category: 'Plumbing Service',
+        plan: 'Standard Monthly',
+        date: '2026-03-07',
+        status: 'Pending',
+        documents: ['Aadhar Card', 'Trade License'],
+        experience: '6 Years',
+        location: 'Pune, Maharashtra',
+        mobile: '+91 99900 88811'
+    },
+    {
+        id: 'APP-1006',
+        providerName: 'Karan Malhotra',
+        category: 'Civil Contracting',
+        plan: 'Annual Elite',
+        date: '2026-03-07',
+        status: 'Pending',
+        documents: ['GST Certificate', 'Business License'],
+        experience: '15 Years',
+        location: 'Chennai, Tamil Nadu',
+        mobile: '+91 88811 77722'
     }
 ];
 
@@ -56,6 +80,8 @@ const ApprovalManagement = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     const handleAction = (id, newStatus) => {
         setRequests(requests.map(req => req.id === id ? { ...req, status: newStatus } : req));
@@ -68,6 +94,11 @@ const ApprovalManagement = () => {
             req.category.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesStatus && matchesSearch;
     });
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedRequests = filteredRequests.slice(startIndex, startIndex + itemsPerPage);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -87,12 +118,15 @@ const ApprovalManagement = () => {
                     <p className="text-slate-500 text-sm font-medium mt-1">Verify and onboard experts to the platform.</p>
                 </div>
 
-                <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm gap-1">
+                <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm gap-1 overflow-x-auto w-full md:w-auto">
                     {['All', 'Pending', 'On-Hold', 'Approved'].map(status => (
                         <button
                             key={status}
-                            onClick={() => setFilterStatus(status)}
-                            className={`px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${filterStatus === status ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'} `}
+                            onClick={() => {
+                                setFilterStatus(status);
+                                setCurrentPage(1);
+                            }}
+                            className={`px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterStatus === status ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'} `}
                         >
                             {status}
                         </button>
@@ -107,7 +141,10 @@ const ApprovalManagement = () => {
                         type="text"
                         placeholder="Search by expert name or category..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
                         className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-[22px] text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-sm"
                     />
                     <svg className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -138,7 +175,7 @@ const ApprovalManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {filteredRequests.map((req) => (
+                            {paginatedRequests.map((req) => (
                                 <tr key={req.id} className="hover:bg-slate-50/50 transition-all group">
                                     <td className="py-6 px-8">
                                         <div className="flex items-center gap-4">
@@ -178,8 +215,49 @@ const ApprovalManagement = () => {
                                     </td>
                                 </tr>
                             ))}
+                            {filteredRequests.length === 0 && (
+                                <tr>
+                                    <td colSpan="6" className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
+                                        No approval requests found.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Pagination Footer */}
+                <div className="p-6 border-t border-slate-50 bg-white flex items-center justify-between">
+                    <p className="text-[12px] font-medium text-slate-500">
+                        Reviewing <span className="font-bold text-slate-900">{paginatedRequests.length}</span> of <span className="font-bold text-slate-900">{filteredRequests.length}</span> pending cases
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i + 1}
+                                onClick={() => setCurrentPage(i + 1)}
+                                className={`w-10 h-10 rounded-xl text-[13px] font-[1000] transition-all ${currentPage === i + 1 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'} `}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 

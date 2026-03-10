@@ -64,6 +64,8 @@ const RequestMonitor = () => {
     const [statusFilter, setStatusFilter] = useState('All');
     const [viewingRequest, setViewingRequest] = useState(null);
     const [isLive, setIsLive] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     // Filter Logic
     const filteredRequests = requests.filter(req => {
@@ -74,6 +76,11 @@ const RequestMonitor = () => {
         const matchesStatus = statusFilter === 'All' || req.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedRequests = filteredRequests.slice(startIndex, startIndex + itemsPerPage);
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -166,7 +173,10 @@ const RequestMonitor = () => {
                             type="text"
                             placeholder="Find by ID, Client or Expert..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
                             className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-[13px] font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all"
                         />
                     </div>
@@ -175,7 +185,10 @@ const RequestMonitor = () => {
                         {['All', 'Pending', 'Accepted', 'Completed'].map(status => (
                             <button
                                 key={status}
-                                onClick={() => setStatusFilter(status)}
+                                onClick={() => {
+                                    setStatusFilter(status);
+                                    setCurrentPage(1);
+                                }}
                                 className={`px-4 py-2 rounded-xl text-[12px] font-bold transition-all ${statusFilter === status ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'} `}
                             >
                                 {status}
@@ -198,7 +211,7 @@ const RequestMonitor = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {filteredRequests.map((req, idx) => (
+                            {paginatedRequests.map((req, idx) => (
                                 <tr key={req.id} className="hover:bg-slate-50/80 transition-all group">
                                     <td className="py-5 px-8">
                                         <div className="flex flex-col">
@@ -257,6 +270,40 @@ const RequestMonitor = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Pagination Footer */}
+                <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
+                    <p className="text-[12px] font-medium text-slate-500">
+                        Monitoring <span className="font-bold text-slate-900">{paginatedRequests.length}</span> of <span className="font-bold text-slate-900">{filteredRequests.length}</span> active traces
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i + 1}
+                                onClick={() => setCurrentPage(i + 1)}
+                                className={`w-10 h-10 rounded-xl text-[13px] font-[1000] transition-all ${currentPage === i + 1 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'} `}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 

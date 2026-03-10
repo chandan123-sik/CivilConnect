@@ -3,13 +3,14 @@ import { ShieldCheck, Star } from 'lucide-react';
 
 const ProviderProfile = () => {
     const [profile, setProfile] = useState({
-        name: localStorage.getItem('provider_name') || 'Ramesh Sharma',
+        name: localStorage.getItem('provider_name') || 'Chandan Sikarwar',
         role: localStorage.getItem('provider_category') || 'Main Civil Contractor',
-        exp: localStorage.getItem('provider_experience') || '12',
-        loc: 'Pune, MH',
-        bio: localStorage.getItem('provider_about') || 'Specializing in residential and industrial construction management. Delivering quality engineering since 2012.',
-        pricing: localStorage.getItem('provider_pricing') || '₹800/Visit',
-        specialities: localStorage.getItem('provider_specialities') || 'Residential Const., RCC Work, Structural Design, Site Mgmt',
+        exp: localStorage.getItem('provider_experience') || '1',
+        city: localStorage.getItem('provider_city') || 'Pune',
+        address: localStorage.getItem('provider_address') || 'Maharashtra',
+        bio: localStorage.getItem('provider_about') || 'Professional civil contractor providing high-quality construction services.',
+        pricing: localStorage.getItem('provider_pricing') || '1200',
+        specialities: localStorage.getItem('provider_specialities') || 'Civil Work, Plumbing, Electrical',
         rating: localStorage.getItem('provider_rating') || '4.8',
         hasPlan: !!localStorage.getItem('onboarding_plan_id'),
         profileImg: localStorage.getItem('provider_profile_image')
@@ -60,6 +61,8 @@ const ProviderProfile = () => {
         setProfile({ ...formData });
         localStorage.setItem('provider_name', formData.name);
         localStorage.setItem('provider_experience', formData.exp);
+        localStorage.setItem('provider_city', formData.city);
+        localStorage.setItem('provider_address', formData.address);
         localStorage.setItem('provider_about', formData.bio);
         localStorage.setItem('provider_pricing', formData.pricing);
         localStorage.setItem('provider_specialities', formData.specialities);
@@ -105,9 +108,9 @@ const ProviderProfile = () => {
                 </button>
             </div>
 
-            <div className="px-6 pt-5 space-y-6">
+            <div className="px-6 pt-4 space-y-4">
                 {/* ── Profile Hero ── */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center">
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col items-center">
                     <div className="relative mb-4">
                         <div className="w-24 h-24 rounded-[28px] bg-slate-100 border-2 border-white shadow-md overflow-hidden ring-4 ring-slate-50 flex items-center justify-center">
                             {profile.profileImg ? (
@@ -125,6 +128,7 @@ const ProviderProfile = () => {
 
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">{profile.name}</h2>
                     <p className="text-slate-500 text-[15px] font-bold tracking-tight mt-1">{profile.role}</p>
+                    <p className="text-slate-400 text-[12px] font-bold mt-1 uppercase tracking-widest">{profile.address}, {profile.city}</p>
 
                     <div className="mt-4 flex gap-2">
                         {profile.hasPlan && (
@@ -139,33 +143,58 @@ const ProviderProfile = () => {
 
                 {/* ── Info Stats Strip ── */}
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white rounded-xl p-4 border border-slate-100 text-center shadow-sm">
-                        <p className="text-slate-500 text-[14px] font-bold tracking-tight mb-1 content-center opacity-80">Experience</p>
-                        <p className="text-slate-900 font-[1000] text-lg">{profile.exp} Years</p>
+                    <div className="bg-white rounded-xl p-3 border border-slate-100 text-center shadow-sm">
+                        <p className="text-slate-500 text-[12px] font-bold tracking-tight mb-0.5 opacity-80 uppercase">Experience</p>
+                        <p className="text-slate-900 font-[1000] text-[16px]">{profile.exp} Years</p>
                     </div>
-                    <div className="bg-white rounded-xl p-4 border border-slate-100 text-center shadow-sm">
-                        <p className="text-slate-500 text-[14px] font-bold tracking-tight mb-1 content-center opacity-80">Base Price</p>
-                        <p className="text-slate-900 font-[1000] text-lg">{profile.pricing}</p>
+                    <div className="bg-white rounded-xl p-3 border border-slate-100 text-center shadow-sm">
+                        <p className="text-slate-500 text-[12px] font-bold tracking-tight mb-0.5 opacity-80 uppercase">Base Price</p>
+                        <p className="text-slate-900 font-[1000] text-[16px]">{profile.pricing}</p>
                     </div>
                 </div>
 
                 {/* ── Biography ── */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-slate-900 font-extrabold text-[18px]">Professional Bio</h3>
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-slate-900 font-extrabold text-[16px]">Professional Bio</h3>
                     </div>
-                    <p className="text-slate-600 text-[15.5px] leading-relaxed font-medium">{profile.bio}</p>
+                    <p className="text-slate-600 text-[14px] leading-relaxed font-medium">{profile.bio}</p>
                 </div>
 
                 {/* ── Skills Section ── */}
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <h3 className="text-slate-900 font-extrabold text-[18px] mb-4">Core Specialities</h3>
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <h3 className="text-slate-900 font-extrabold text-[16px] mb-3">Core Specialities</h3>
                     <div className="flex flex-wrap gap-2">
                         {specialtiesList.map(skill => (
-                            <span key={skill} className="bg-[#F8FAFC] text-slate-600 text-[12px] font-black px-3.5 py-2.5 rounded-xl border-2 border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] uppercase tracking-tight">
+                            <span key={skill} className="bg-[#F8FAFC] text-slate-600 text-[11px] font-black px-3 py-2 rounded-xl border border-slate-100 uppercase tracking-tight">
                                 {skill.trim()}
                             </span>
                         ))}
+                    </div>
+                </div>
+
+                {/* ── Identity Verification ── */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <h3 className="text-slate-900 font-extrabold text-[15px] mb-4">Identity Verification</h3>
+                    <div className="flex flex-col gap-3">
+                        <div className="bg-[#F0FDF4] p-3 rounded-xl border border-[#DCFCE7] flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+                                    <ShieldCheck size={16} />
+                                </div>
+                                <p className="text-slate-700 text-[13px] font-bold">Aadhar Card Status</p>
+                            </div>
+                            <span className="text-[#15803D] font-black text-[10px] uppercase tracking-wider bg-white/50 px-2 py-1 rounded-md">✓ Verified</span>
+                        </div>
+                        <div className="bg-[#F0FDF4] p-3 rounded-xl border border-[#DCFCE7] flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+                                    <ShieldCheck size={16} />
+                                </div>
+                                <p className="text-slate-700 text-[13px] font-bold">Police Verification</p>
+                            </div>
+                            <span className="text-[#15803D] font-black text-[10px] uppercase tracking-wider bg-white/50 px-2 py-1 rounded-md">✓ Verified</span>
+                        </div>
                     </div>
                 </div>
 
@@ -202,7 +231,7 @@ const ProviderProfile = () => {
                 </div>
 
                 {/* ── Support & Settings ── */}
-                <div className="space-y-3">
+                <div className="space-y-2 mt-[-8px]">
                     <p className="text-slate-400 text-[10px] font-[1000] uppercase tracking-[0.2em] px-1">Support & Growth</p>
                     <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
                         <button
@@ -285,6 +314,23 @@ const ProviderProfile = () => {
                                     <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Rating</label>
                                     <input
                                         type="text" name="rating" value={formData.rating} onChange={handleInput}
+                                        className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Service City</label>
+                                    <input
+                                        type="text" name="city" value={formData.city} onChange={handleInput}
+                                        className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A]"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] block mb-2 px-1">Service Area</label>
+                                    <input
+                                        type="text" name="address" value={formData.address} onChange={handleInput}
                                         className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A]"
                                     />
                                 </div>
