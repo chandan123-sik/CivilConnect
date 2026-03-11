@@ -45,6 +45,7 @@ import ProviderHome from './module/serviceprovider/pages/Home';
 import ProviderRequests from './module/serviceprovider/pages/Requests';
 import ProviderSubscription from './module/serviceprovider/pages/Subscription';
 import ProviderProfileManagement from './module/serviceprovider/pages/Profile';
+import ProviderWorkers from './module/serviceprovider/pages/Workers';
 
 // Auth Guard
 const RequireAuth = ({ children }) => {
@@ -112,6 +113,7 @@ function App() {
           <Route path="home" element={<ProviderHome />} />
           <Route path="requests" element={<ProviderRequests />} />
           <Route path="subscription" element={<ProviderSubscription />} />
+          <Route path="workers" element={<ProviderWorkers />} />
           <Route path="profile" element={<ProviderProfileManagement />} />
         </Route>
 
