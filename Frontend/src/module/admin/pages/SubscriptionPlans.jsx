@@ -30,7 +30,7 @@ const SubscriptionPlans = () => {
             const activeSubs = providersData
                 .filter(p => p.subscriptionId)
                 .map(p => {
-                    const matchedPlan = plansData.find(pl => pl._id === p.subscriptionId);
+                    const matchedPlan = plansData.find(pl => String(pl._id) === String(p.subscriptionId));
                     return {
                         id: p._id,
                         provider: p.fullName,
@@ -43,7 +43,7 @@ const SubscriptionPlans = () => {
                 
             // Update plan subscribers count
             const mappedPlans = plansData.map(plan => {
-                const subCount = providersData.filter(p => p.subscriptionId === plan._id).length;
+                const subCount = providersData.filter(p => String(p.subscriptionId) === String(plan._id)).length;
                 return { ...plan, subscribers: subCount };
             });
 
@@ -58,10 +58,10 @@ const SubscriptionPlans = () => {
         fetchData();
     }, []);
 
-    // Calculates days remaining with current date (Simulated)
+    // Calculates days remaining with current date (Dynamic)
     const getDaysRemaining = (endDate) => {
         const end = new Date(endDate);
-        const diff = end - new Date('2026-03-05');
+        const diff = end - new Date();
         const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
         return days > 0 ? days : 0;
     };
@@ -184,10 +184,10 @@ const SubscriptionPlans = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {plans.map((plan) => {
                         const style = planStyles[plan.color] || planStyles.emerald;
-                        const isInactive = plan.status === 'Inactive';
+                        const isInactive = !plan.isActive;
 
                         return (
-                            <div key={plan._id} className={`bg-white border-2 rounded-[32px] p-8 relative overflow-hidden group hover:shadow-2xl transition-all duration-500 ${isInactive ? 'opacity-60 grayscale-[0.5] border-slate-100' : `${style.border} border-opacity-50`}`}>
+                            <div key={plan._id} className={`bg-white border-2 rounded-[32px] p-8 relative overflow-hidden group hover:shadow-2xl transition-all duration-500 ${isInactive ? 'opacity-70 bg-slate-50 border-slate-200' : `${style.border} border-opacity-50`}`}>
                                 {/* Decorative BG */}
                                 <div className={`absolute top-0 right-0 w-32 h-32 ${style.accent} opacity-5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-700`} />
 
@@ -196,27 +196,35 @@ const SubscriptionPlans = () => {
                                         <span className={`px-3 py-1 ${style.bg} ${style.text} text-[9px] font-black uppercase tracking-widest rounded-md border ${style.border}`}>
                                             {plan.tag}
                                         </span>
-                                        {isInactive && <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-widest rounded-md border border-slate-200">Deactivated</span>}
+                                        {isInactive && <span className="px-3 py-1 bg-red-50 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-md border border-red-100">Hidden from Providers</span>}
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => togglePlanStatus(plan._id, plan.isActive)} className={`p-2 rounded-lg transition-colors ${isInactive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`} title={isInactive ? "Activate Plan" : "Deactivate Plan"}>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={isInactive ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" : "M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"} /></svg>
-                                        </button>
-                                        <button onClick={() => handleOpenEdit(plan)} className="p-2 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg transition-colors" title="Edit Plan">
+                                        <button onClick={() => handleOpenEdit(plan)} className="p-2 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg transition-colors border border-slate-100" title="Edit Plan">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                         </button>
-                                        <button onClick={() => handleDeletePlan(plan._id)} className="p-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors" title="Delete Plan">
+                                        <button onClick={() => handleDeletePlan(plan._id)} className="p-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors border border-slate-100" title="Delete Plan">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="mb-8">
+                                <div className="mb-6">
                                     <h3 className="text-slate-800 font-[1000] text-2xl tracking-tighter mb-2">{plan.name}</h3>
                                     <div className="flex items-baseline gap-1">
                                         <span className={`text-3xl font-black ${isInactive ? 'text-slate-400' : 'text-slate-900'}`}>₹{plan.price}</span>
                                         <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">/ {plan.durationDays} Days</span>
                                     </div>
+                                </div>
+
+                                {/* Active View Toggle */}
+                                <div className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-2xl mb-6 border border-slate-100">
+                                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Visibility Status</span>
+                                    <button 
+                                        onClick={() => togglePlanStatus(plan._id, plan.isActive)}
+                                        className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${plan.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 ${plan.isActive ? 'left-7' : 'left-1'}`} />
+                                    </button>
                                 </div>
 
                                 <div className="space-y-3.5 mb-8">
