@@ -1,33 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockCategories } from '../mockData';
+import { getCategories } from '../../../api/publicApi';
 
 const Categories = () => {
     const navigate = useNavigate();
     const [search, setSearch] = React.useState('');
 
-    // Read from localStorage (set by Admin panel), fallback to mockData
-    const categories = React.useMemo(() => {
-        const saved = localStorage.getItem('cc_admin_categories');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            // Guard: if stale old IDs (cat-001 format), clear and use mockData
-            if (parsed.length > 0 && parsed[0]?.id?.startsWith('cat-')) {
-                localStorage.removeItem('cc_admin_categories');
-                return mockCategories;
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCats = async () => {
+            try {
+                const res = await getCategories();
+                setCategories(res);
+            } catch (err) {
+                console.error("Failed to fetch categories:", err);
+            } finally {
+                setLoading(false);
             }
-            return parsed
-                .filter(c => c.status === 'Active')
-                .map(c => ({
-                    id: c.id,
-                    label: c.label,
-                    icon: c.icon,
-                    color: '#F5F3FF',
-                    accent: '#7C3AED',
-                    subCategories: c.subCategories || []
-                }));
-        }
-        return mockCategories;
+        };
+        fetchCats();
     }, []);
 
     // Smart search: matches main label OR any sub-category name
@@ -96,10 +89,14 @@ const Categories = () => {
                 gridTemplateColumns: '1fr 1fr',
                 gap: '16px'
             }}>
-                {filteredCategories.map((cat, i) => (
+                {loading ? (
+                    <div style={{ gridColumn: 'span 2', textAlign: 'center', padding: '40px', color: '#6B7280' }}>
+                        Loading categories...
+                    </div>
+                ) : filteredCategories.map((cat, i) => (
                     <div
-                        key={cat.id}
-                        onClick={() => navigate(`/user/categories/${cat.id}`)}
+                        key={cat._id}
+                        onClick={() => navigate(`/user/categories/${cat._id}`, { state: { catName: cat.label } })}
                         className="cat-card-animated"
                         style={{
                             background: '#fff',
@@ -129,7 +126,7 @@ const Categories = () => {
                             boxShadow: '0 4px 12px rgba(124, 58, 237, 0.08)',
                             border: '1.5px solid #fff'
                         }}>
-                            {cat.icon}
+                            {cat.icon || '🛠️'}
                         </div>
                         <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '800', color: '#111827', margin: 0 }}>
                             {cat.label}

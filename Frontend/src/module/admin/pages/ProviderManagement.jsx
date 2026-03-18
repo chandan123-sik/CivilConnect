@@ -1,133 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAllProviders, updateProviderStatus } from '../../../api/adminApi';
+import { showToast } from '../../../components/Toast';
 
-const dummyProviders = [
-    {
-        id: 'PRV-1042',
-        name: 'RK Architects',
-        category: 'Architect',
-        phone: '+91 98765 11223',
-        email: 'rajesh.rkarchitects@gmail.com',
-        joinDate: '12 Sep, 2023',
-        status: 'Active',
-        subscription: 'Pro',
-        rating: 4.8,
-        completedJobs: 45,
-        avatar: 'RK',
-        panCard: 'ABCDE1234F',
-        aadhar: 'XXXX-XXXX-1234'
-    },
-    {
-        id: 'PRV-1043',
-        name: 'Patil Constructions',
-        category: 'Contractor',
-        phone: '+91 87654 22334',
-        email: 'contact@patilbuild.com',
-        joinDate: '05 Oct, 2023',
-        status: 'Active',
-        subscription: 'Basic',
-        rating: 4.5,
-        completedJobs: 120,
-        avatar: 'PC',
-        panCard: 'ZYXWV9876U',
-        aadhar: 'XXXX-XXXX-5678'
-    },
-    {
-        id: 'PRV-1044',
-        name: 'Tiwari Plumbing Solutions',
-        category: 'Plumber',
-        phone: '+91 76543 33445',
-        email: 'manoj.plumber@yahoo.com',
-        joinDate: '18 Nov, 2023',
-        status: 'Pending',
-        subscription: 'Basic',
-        rating: 0,
-        completedJobs: 0,
-        avatar: 'TP',
-        panCard: 'PQRST5432W',
-        aadhar: 'XXXX-XXXX-9012'
-    },
-    {
-        id: 'PRV-1045',
-        name: 'Anita Interior Designs',
-        category: 'Interior Designer',
-        phone: '+91 65432 44556',
-        email: 'anita.designs@outlook.com',
-        joinDate: '22 Dec, 2023',
-        status: 'Active',
-        subscription: 'Premium',
-        rating: 4.9,
-        completedJobs: 65,
-        avatar: 'AD',
-        panCard: 'LMNOP1357Q',
-        aadhar: 'XXXX-XXXX-3456'
-    },
-    {
-        id: 'PRV-1046',
-        name: 'Sharma Electricals',
-        category: 'Electrician',
-        phone: '+91 99887 55667',
-        email: 'gaurav.sharma.elec@gmail.com',
-        joinDate: '08 Jan, 2024',
-        status: 'Suspended',
-        subscription: 'Basic',
-        rating: 3.8,
-        completedJobs: 12,
-        avatar: 'SE',
-        panCard: 'FGHIJ2468R',
-        aadhar: 'XXXX-XXXX-7890'
-    },
-    {
-        id: 'PRV-1047',
-        name: 'Singh Civil Works',
-        category: 'Contractor',
-        phone: '+91 88776 66778',
-        email: 'kishore.civilworks@rediff.com',
-        joinDate: '15 Feb, 2024',
-        status: 'Blocked',
-        subscription: 'Basic',
-        rating: 2.1,
-        completedJobs: 5,
-        avatar: 'SC',
-        panCard: 'VWXYZ7531S',
-        aadhar: 'XXXX-XXXX-1122'
-    },
-    {
-        id: 'PRV-1048',
-        name: 'Modern Architects',
-        category: 'Architect',
-        phone: '+91 99988 77766',
-        email: 'info@modernarch.com',
-        joinDate: '20 Feb, 2024',
-        status: 'Active',
-        subscription: 'Pro',
-        rating: 4.7,
-        completedJobs: 32,
-        avatar: 'MA',
-        panCard: 'ABCDE5678G',
-        aadhar: 'XXXX-XXXX-9999'
-    },
-    {
-        id: 'PRV-1049',
-        name: 'Elite Painters',
-        category: 'Painter',
-        phone: '+91 88877 66655',
-        email: 'elite.painters@gmail.com',
-        joinDate: '01 Mar, 2024',
-        status: 'Active',
-        subscription: 'Basic',
-        rating: 4.4,
-        completedJobs: 88,
-        avatar: 'EP',
-        panCard: 'FGHIJ1234K',
-        aadhar: 'XXXX-XXXX-1111'
-    }
-];
+// Dummy data removed for real API integration
 
 const ProviderManagement = () => {
-    const [providers, setProviders] = useState(dummyProviders);
+    const [providers, setProviders] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [categoryFilter, setCategoryFilter] = useState('');
+
+    const fetchProviders = async () => {
+        setLoading(true);
+        try {
+            const data = await getAllProviders();
+            setProviders(data);
+        } catch (err) {
+            console.error("Fetch providers error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchProviders();
+    }, []);
 
     // UI States
     const [isAddProviderModalOpen, setIsAddProviderModalOpen] = useState(false);
@@ -144,27 +42,29 @@ const ProviderManagement = () => {
     const itemsPerPage = 5;
 
     // Filter Logic
-    const filteredProviders = providers.filter(provider => {
-        const matchesSearch = provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            provider.phone.includes(searchTerm);
-        const matchesStatus = statusFilter === 'All' || provider.status === statusFilter;
-        const matchesCategory = provider.category.toLowerCase().includes(categoryFilter.toLowerCase());
-        return matchesSearch && matchesStatus && matchesCategory;
-    });
+    const filteredProviders = providers
+        .filter(provider => {
+            const matchesSearch = (provider.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (provider.phone || '').includes(searchTerm);
+            const matchesStatus = statusFilter === 'All' || 
+                                 (statusFilter === 'Active' && provider.isActive) ||
+                                 (statusFilter === 'Suspended' && !provider.isActive) ||
+                                 (statusFilter === 'Pending' && provider.approvalStatus === 'pending');
+            const matchesCategory = (provider.category || '').toLowerCase().includes(categoryFilter.toLowerCase());
+            return matchesSearch && matchesStatus && matchesCategory;
+        })
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredProviders.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedProviders = filteredProviders.slice(startIndex, startIndex + itemsPerPage);
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case 'Active': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'Pending': return 'bg-green-100 text-green-700 border-green-200';
-            case 'Suspended': return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'Blocked': return 'bg-red-100 text-red-700 border-red-200';
-            default: return 'bg-slate-100 text-slate-700 border-slate-200';
-        }
+    const getStatusStyle = (provider) => {
+        if (!provider) return 'bg-slate-100 text-slate-600 border-slate-200';
+        if (provider.approvalStatus === 'pending') return 'bg-amber-100 text-amber-700 border-amber-200';
+        if (!provider.isActive) return 'bg-red-100 text-red-700 border-red-200';
+        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     };
 
     const getSubscriptionStyle = (plan) => {
@@ -175,8 +75,14 @@ const ProviderManagement = () => {
         }
     };
 
-    const handleToggleStatus = (providerId, newStatus) => {
-        setProviders(providers.map(p => p.id === providerId ? { ...p, status: newStatus } : p));
+    const handleToggleStatus = async (providerId, currentStatus) => {
+        try {
+            await updateProviderStatus(providerId, !currentStatus);
+            showToast(`Provider ${currentStatus ? 'Suspended' : 'Activated'} Successfully`, 'success');
+            fetchProviders();
+        } catch (err) {
+            showToast("Status update failed", "error");
+        }
     };
 
     const handleExportCSV = () => {
@@ -240,9 +146,9 @@ const ProviderManagement = () => {
             {/* ── Metric Cards ── */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 {[
-                    { label: 'Total Providers', value: '458', icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                    { label: 'Pending Approvals', value: '24', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', color: 'text-green-500', bg: 'bg-green-50' },
-                    { label: 'Active Subs', value: '312', icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z', color: 'text-teal-500', bg: 'bg-teal-50' },
+                    { label: 'Total Providers', value: providers.length, icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                    { label: 'Pending Approvals', value: providers.filter(p => p.approvalStatus === 'pending').length, icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', color: 'text-green-500', bg: 'bg-green-50' },
+                    { label: 'Active Subs', value: providers.filter(p => p.subscriptionId).length, icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z', color: 'text-teal-500', bg: 'bg-teal-50' },
                     { label: 'Avg Rating', value: '4.6', icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z', color: 'text-amber-500', bg: 'bg-amber-50' }
                 ].map((stat, idx) => (
                     <div key={idx} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
@@ -333,14 +239,18 @@ const ProviderManagement = () => {
                         <tbody className="divide-y divide-slate-50">
                             {paginatedProviders.length > 0 ? (
                                 paginatedProviders.map((provider) => (
-                                    <tr key={provider.id} className="hover:bg-slate-50/80 transition-colors group">
+                                        <tr key={provider._id} className="hover:bg-slate-50/80 transition-colors group">
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center text-slate-500 font-black text-sm shrink-0 shadow-sm">
-                                                    {provider.avatar}
+                                                <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center text-slate-500 font-black text-sm shrink-0 shadow-sm">
+                                                    {provider.profileImage ? (
+                                                        <img src={provider.profileImage} alt="" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        (provider.fullName || 'P').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                                                    )}
                                                 </div>
                                                 <div>
-                                                    <p className="text-[14px] font-extrabold text-slate-900 mb-[2px]">{provider.name}</p>
+                                                    <p className="text-[14px] font-extrabold text-slate-900 mb-[2px]">{provider.fullName}</p>
                                                     <p className="text-[12px] font-medium text-slate-500">{provider.phone}</p>
                                                 </div>
                                             </div>
@@ -348,23 +258,23 @@ const ProviderManagement = () => {
                                         <td className="py-4 px-6">
                                             <div className="flex flex-col items-start gap-1.5">
                                                 <span className="text-[13px] font-bold text-slate-700">{provider.category}</span>
-                                                <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-md border ${getSubscriptionStyle(provider.subscription)}`}>
-                                                    {provider.subscription}
+                                                <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-md border ${getSubscriptionStyle(provider.subscriptionId ? 'Premium' : 'Basic')}`}>
+                                                    {provider.subscriptionId ? 'Premium' : 'Basic'}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="py-4 px-6">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(provider.status)}`}>
-                                                {provider.status}
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(provider)}`}>
+                                                {provider.approvalStatus === 'pending' ? 'Pending' : provider.isActive ? 'Active' : 'Suspended'}
                                             </span>
                                         </td>
                                         <td className="py-4 px-6">
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-1 text-amber-500">
                                                     <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                                                    <span className="text-[12px] font-bold text-slate-700">{provider.rating === 0 ? 'New' : provider.rating}</span>
+                                                    <span className="text-[12px] font-bold text-slate-700">{provider.avgRating || 'New'}</span>
                                                 </div>
-                                                <p className="text-[11px] font-bold text-slate-400">{provider.completedJobs} Jobs Done</p>
+                                                <p className="text-[11px] font-bold text-slate-400">{provider.jobsDone || 0} Jobs Done</p>
                                             </div>
                                         </td>
                                         <td className="py-4 px-6 text-right">
@@ -372,25 +282,9 @@ const ProviderManagement = () => {
                                                 <button onClick={() => setViewingProvider(provider)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="View Details">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                                 </button>
-                                                {provider.status === 'Pending' && (
-                                                    <button onClick={() => handleToggleStatus(provider.id, 'Active')} className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Approve Provider">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
-                                                    </button>
-                                                )}
-                                                {provider.status !== 'Blocked' && provider.status !== 'Pending' && (
-                                                    <button onClick={() => handleToggleStatus(provider.id, provider.status === 'Suspended' ? 'Active' : 'Suspended')} className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors" title={provider.status === 'Suspended' ? "Activate" : "Suspend"}>
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                    </button>
-                                                )}
-                                                {provider.status !== 'Blocked' ? (
-                                                    <button onClick={() => handleToggleStatus(provider.id, 'Blocked')} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Block">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                                                    </button>
-                                                ) : (
-                                                    <button onClick={() => handleToggleStatus(provider.id, 'Active')} className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Unblock">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                    </button>
-                                                )}
+                                                <button onClick={() => handleToggleStatus(provider._id, provider.isActive)} className={`p-2 rounded-lg transition-colors ${provider.isActive ? 'text-slate-400 hover:text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-green-500 hover:bg-green-50'}`} title={provider.isActive ? "Suspend" : "Activate"}>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -442,52 +336,84 @@ const ProviderManagement = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setViewingProvider(null)}></div>
                     <div className="relative bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className={`h-24 ${viewingProvider.status === 'Active' ? 'bg-gradient-to-r from-emerald-600 to-teal-800' : viewingProvider.status === 'Pending' ? 'bg-gradient-to-r from-slate-400 to-slate-500' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}></div>
+                        {/* Header Band — color based on real status */}
+                        <div className={`h-24 ${
+                            viewingProvider.approvalStatus === 'pending'
+                                ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                                : viewingProvider.isActive
+                                    ? 'bg-gradient-to-r from-emerald-600 to-teal-700'
+                                    : 'bg-gradient-to-r from-slate-400 to-slate-600'
+                        }`}></div>
 
                         <div className="px-6 pb-6 relative">
                             <div className="flex justify-between items-end -mt-10 mb-4">
+                                {/* Avatar — initials from fullName */}
                                 <div className="w-20 h-20 rounded-2xl bg-white p-1.5 shadow-lg">
-                                    <div className="w-full h-full rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-black text-2xl border border-slate-200">{viewingProvider.avatar}</div>
+                                    {viewingProvider.profileImage ? (
+                                        <img src={viewingProvider.profileImage} className="w-full h-full rounded-xl object-cover" alt="Provider" />
+                                    ) : (
+                                        <div className="w-full h-full rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-black text-xl border border-slate-200">
+                                            {(viewingProvider.fullName || 'P').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                        </div>
+                                    )}
                                 </div>
-                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(viewingProvider.status)} bg-opacity-100`}>
-                                    {viewingProvider.status}
+                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(viewingProvider)}`}>
+                                    {viewingProvider.approvalStatus === 'pending' ? 'Pending' : viewingProvider.isActive ? 'Active' : 'Suspended'}
                                 </span>
                             </div>
 
-                            <div className="mb-4 space-y-1">
-                                <h3 className="text-xl font-black text-slate-800">{viewingProvider.name}</h3>
+                            <div className="mb-4">
+                                <h3 className="text-xl font-black text-slate-800">{viewingProvider.fullName}</h3>
+                                <p className="text-[12px] font-bold text-slate-400 mt-0.5">{viewingProvider.city || 'Location N/A'}</p>
                             </div>
 
                             <div className="space-y-3">
+                                {/* Category & Experience */}
                                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center">
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Category / Trade</p>
-                                        <p className="text-[14px] font-bold text-slate-700">{viewingProvider.category}</p>
+                                        <p className="text-[14px] font-bold text-slate-700">{viewingProvider.category || 'N/A'}</p>
+                                        {viewingProvider.subCategory && (
+                                            <p className="text-[11px] text-slate-400 mt-0.5">{viewingProvider.subCategory}</p>
+                                        )}
                                     </div>
-                                    <span className={`px-3 py-1 text-[11px] font-black uppercase tracking-widest rounded-lg border ${getSubscriptionStyle(viewingProvider.subscription)}`}>
-                                        {viewingProvider.subscription} Plan
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">PAN Card</p>
-                                        <p className="text-[12px] font-bold text-slate-700 font-mono tracking-wider">{viewingProvider.panCard}</p>
-                                    </div>
-                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Aadhar</p>
-                                        <p className="text-[12px] font-bold text-slate-700 font-mono tracking-wider">{viewingProvider.aadhar}</p>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Experience</p>
+                                        <p className="text-[16px] font-black text-emerald-600">{viewingProvider.experience || 0}+ yrs</p>
                                     </div>
                                 </div>
 
+                                {/* Subscription Plan */}
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Subscription Plan</p>
+                                    <p className="text-[13px] font-bold text-slate-700">
+                                        {viewingProvider.subscriptionId ? '✅ Active Plan' : '❌ No Active Plan'}
+                                    </p>
+                                </div>
+
+                                {/* About */}
+                                {viewingProvider.about && (
+                                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">About</p>
+                                        <p className="text-[12px] text-slate-600 leading-relaxed">{viewingProvider.about}</p>
+                                    </div>
+                                )}
+
+                                {/* Contact */}
                                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Contact</p>
-                                    <p className="text-[13px] font-semibold text-slate-700">{viewingProvider.phone} • {viewingProvider.email}</p>
+                                    <p className="text-[13px] font-semibold text-slate-700">{viewingProvider.phone || 'N/A'}</p>
+                                </div>
+
+                                {/* Approval Status */}
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Approval Status</p>
+                                    <p className="text-[13px] font-bold text-slate-700 capitalize">{viewingProvider.approvalStatus || 'N/A'}</p>
                                 </div>
                             </div>
 
                             <button onClick={() => setViewingProvider(null)} className="w-full mt-6 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-[13px] transition-colors">
-                                Close Terminal
+                                Close
                             </button>
                         </div>
                     </div>

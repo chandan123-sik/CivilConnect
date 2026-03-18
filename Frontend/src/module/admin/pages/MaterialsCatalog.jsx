@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createMaterial, updateMaterial, deleteMaterial, getAllOrders, updateOrderStatus } from '../../../api/adminApi';
+import { getMaterials } from '../../../api/publicApi';
 
 // Initial mock data based on mockData.js structure
 const initialMaterials = [
@@ -19,79 +21,47 @@ const DEFAULT_BRANDS = [
 ];
 
 const MaterialsCatalog = () => {
-    const [materials, setMaterials] = useState(() => {
-        const saved = localStorage.getItem('cc_materials_catalog');
-        return saved ? JSON.parse(saved) : initialMaterials.map(m => ({ ...m, brands: DEFAULT_BRANDS }));
-    });
+    const [materials, setMaterials] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [viewMode, setViewMode] = useState('catalog'); // 'catalog' or 'requests'
-    const [materialRequests, setMaterialRequests] = useState(() => {
-        try {
-            const saved = localStorage.getItem('cc_material_orders');
-            const parsed = saved ? JSON.parse(saved) : [];
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-            console.error("Failed to parse material orders:", e);
-            return [];
-        }
-    });
-    const [deliveryTimeInput, setDeliveryTimeInput] = useState('');
+    const [materialRequests, setMaterialRequests] = useState([]);
+    const [submitLoading, setSubmitLoading] = useState(false);
     const [processingOrderId, setProcessingOrderId] = useState(null);
+    const [deliveryTimeInput, setDeliveryTimeInput] = useState('');
 
-    // Sync materials to localStorage
-    React.useEffect(() => {
-        localStorage.setItem('cc_materials_catalog', JSON.stringify(materials));
-    }, [materials]);
+    const loadMaterials = async () => {
+        setLoading(true);
+        try {
+            const res = await getMaterials();
+            setMaterials(res);
+        } catch (err) {
+            console.error("Failed to fetch materials:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    // Fetch requests from localStorage with real-time sync
-    React.useEffect(() => {
-        const loadRequests = () => {
-            try {
-                const orders = JSON.parse(localStorage.getItem('cc_material_orders') || '[]');
-                if (Array.isArray(orders)) {
-                    setMaterialRequests(orders);
-                }
-            } catch (err) {
-                console.error("Error loading material requests:", err);
-            }
-        };
+    const loadOrders = async () => {
+        try {
+            const res = await getAllOrders();
+            setMaterialRequests(res);
+        } catch (err) {
+            console.error("Failed to fetch orders:", err);
+        }
+    };
 
-        // Reload on mount
-        loadRequests();
-
-        // Polling as fallback
-        const interval = setInterval(loadRequests, 3000);
-
-        // Real-time listener (handles same-tab and multi-tab)
-        const handleStorageChange = (e) => {
-            // e.key is null for dispatchEvent(new Event('storage'))
-            if (!e || !e.key || e.key === 'cc_material_orders') {
-                loadRequests();
-            }
-        };
-        window.addEventListener('storage', handleStorageChange);
-
-        return () => {
-            clearInterval(interval);
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, []);
-
-    const handleUpdateOrderStatus = (orderId, status, deliveryTime = null) => {
-        const updatedRequests = materialRequests.map(req => {
-            if (req.id === orderId) {
-                return { ...req, status, deliveryTime };
-            }
-            return req;
-        });
-        setMaterialRequests(updatedRequests);
-        localStorage.setItem('cc_material_orders', JSON.stringify(updatedRequests));
-        window.dispatchEvent(new Event('storage'));
-
-        // Clear inputs
-        setProcessingOrderId(null);
-        setDeliveryTimeInput('');
+    const handleUpdateOrderStatus = async (orderId, status, deliveryTime = null) => {
+        try {
+            await updateOrderStatus(orderId, { status, deliveryTime });
+            loadOrders();
+            // Clear inputs
+            setProcessingOrderId(null);
+            setDeliveryTimeInput('');
+        } catch (err) {
+            alert("Failed to update order status");
+        }
     };
 
     // UI States
@@ -132,12 +102,14 @@ const MaterialsCatalog = () => {
     });
 
     const handleForceSync = () => {
-        const orders = JSON.parse(localStorage.getItem('cc_material_orders') || '[]');
-        const cat = JSON.parse(localStorage.getItem('cc_materials_catalog') || '[]');
-        setMaterialRequests(Array.isArray(orders) ? orders : []);
-        setMaterials(Array.isArray(cat) ? cat : []);
-        console.log("Material Sync Forced at:", new Date().toLocaleTimeString());
+        loadMaterials();
+        loadOrders();
     };
+
+    useEffect(() => {
+        loadMaterials();
+        loadOrders();
+    }, []);
 
     const handleOpenModal = (item = null) => {
         if (item) {
@@ -150,34 +122,43 @@ const MaterialsCatalog = () => {
         setIsModalOpen(true);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        let updatedMaterials;
-        if (editingItem) {
-            updatedMaterials = materials.map(m => m.id === editingItem.id ? { ...formData } : m);
-        } else {
-            const newItem = {
-                ...formData,
-                id: `MAT-${Math.floor(Math.random() * 900) + 100}`,
-                brands: formData.brands.length > 0 ? formData.brands : DEFAULT_BRANDS
-            };
-            updatedMaterials = [newItem, ...materials];
+        setSubmitLoading(true);
+        try {
+            const data = new FormData();
+            Object.keys(formData).forEach(key => {
+                if (key === 'brands') {
+                    data.append(key, JSON.stringify(formData[key]));
+                } else if (formData[key] instanceof File) {
+                    data.append(key, formData[key]);
+                } else if (formData[key] !== null && formData[key] !== undefined) {
+                    data.append(key, formData[key]);
+                }
+            });
+
+            if (editingItem) {
+                await updateMaterial(editingItem._id, data);
+            } else {
+                await createMaterial(data);
+            }
+            loadMaterials();
+            setIsModalOpen(false);
+        } catch (err) {
+            alert(err || "Failed to save material");
+        } finally {
+            setSubmitLoading(false);
         }
-
-        // Direct save to ensure sync
-        setMaterials(updatedMaterials);
-        localStorage.setItem('cc_materials_catalog', JSON.stringify(updatedMaterials));
-        window.dispatchEvent(new Event('storage'));
-
-        setIsModalOpen(false);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to remove this material from catalog?')) {
-            const updated = materials.filter(m => m.id !== id);
-            setMaterials(updated);
-            localStorage.setItem('cc_materials_catalog', JSON.stringify(updated));
-            window.dispatchEvent(new Event('storage'));
+            try {
+                await deleteMaterial(id);
+                loadMaterials();
+            } catch (err) {
+                alert("Delete failed");
+            }
         }
     };
 
@@ -215,13 +196,11 @@ const MaterialsCatalog = () => {
                 </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 {[
                     { label: 'Total Items', value: materials.length, icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', color: 'text-emerald-500', bg: 'bg-emerald-50' },
                     { label: 'Active Items', value: materials.filter(m => m.status === 'Active').length, icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-green-500', bg: 'bg-green-50' },
-                    { label: 'Price Updates', value: '12', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', color: 'text-teal-500', bg: 'bg-teal-50' },
-                    { label: 'Categories', value: categories.length - 1, icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', color: 'text-emerald-600', bg: 'bg-emerald-50' }
+                    { label: 'Categories', value: new Set(materials.map(m => m.category)).size, icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', color: 'text-emerald-600', bg: 'bg-emerald-50' }
                 ].map((stat, idx) => (
                     <div key={idx} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center shrink-0`}>
@@ -283,7 +262,7 @@ const MaterialsCatalog = () => {
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {filteredMaterials.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
+                                    <tr key={item._id || item.id} className="hover:bg-slate-50/80 transition-colors group">
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shrink-0">
@@ -291,7 +270,7 @@ const MaterialsCatalog = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-[14px] font-extrabold text-slate-900 mb-[2px]">{item.name}</p>
-                                                    <p className="text-[11px] font-bold text-slate-400 font-mono tracking-tighter">{item.id}</p>
+                                                    <p className="text-[11px] font-bold text-slate-400 font-mono tracking-tighter">{item._id}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -314,7 +293,7 @@ const MaterialsCatalog = () => {
                                                 <button onClick={() => handleOpenModal(item)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Edit">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                                 </button>
-                                                <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                                                <button onClick={() => handleDelete(item._id || item.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                 </button>
                                             </div>
@@ -329,7 +308,7 @@ const MaterialsCatalog = () => {
                                 <div className="col-span-full py-20 text-center text-slate-400 font-bold">No material booking requests yet.</div>
                             ) : (
                                 materialRequests.map((req) => (
-                                    <div key={req.id} className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm relative group overflow-hidden">
+                                    <div key={req._id} className="bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm relative group overflow-hidden">
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 text-sm font-black uppercase">
@@ -337,12 +316,8 @@ const MaterialsCatalog = () => {
                                                 </div>
                                                 <div>
                                                     <h3 className="text-[14px] font-black text-slate-900 leading-tight">{req.userName}</h3>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
-                                                        {req.userId} • <span className="text-emerald-500">{req.userAddress || 'Address N/A'}</span>
-                                                        <span className="block mt-1 text-indigo-600 font-black tracking-tight flex items-center gap-1">
-                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 015.08 2h3a2 2 0 012 1.72 12.81 12.81 0 00.72 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l2.27-2.26a2 2 0 012.11-.45 12.84 12.84 0 002.81.72 2 2 0 011.72 2z" /></svg>
-                                                            {req.userPhone || 'No Phone'}
-                                                        </span>
+                                                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+                                                        {req.userPhone || 'No Phone'} • <span className="text-emerald-500">{req.userAddress || 'Address N/A'}</span>
                                                     </p>
                                                 </div>
                                             </div>
@@ -362,7 +337,7 @@ const MaterialsCatalog = () => {
 
                                         {req.status === 'pending' && (
                                             <div className="flex gap-3">
-                                                {processingOrderId === req.id ? (
+                                                {processingOrderId === req._id ? (
                                                     <div className="w-full flex gap-2 animate-in slide-in-from-bottom-2">
                                                         <input
                                                             type="text"
@@ -372,7 +347,7 @@ const MaterialsCatalog = () => {
                                                             className="flex-1 px-4 py-2.5 bg-white border-2 border-emerald-500 rounded-xl text-[12px] font-bold outline-none ring-4 ring-emerald-500/10"
                                                         />
                                                         <button
-                                                            onClick={() => handleUpdateOrderStatus(req.id, 'accepted', deliveryTimeInput)}
+                                                            onClick={() => handleUpdateOrderStatus(req._id, 'accepted', deliveryTimeInput)}
                                                             className="px-6 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
                                                         >
                                                             Send
@@ -380,8 +355,8 @@ const MaterialsCatalog = () => {
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <button onClick={() => handleUpdateOrderStatus(req.id, 'rejected')} className="flex-1 py-2.5 bg-white border border-red-100 text-red-500 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-red-50 transition-all active:scale-95">Reject</button>
-                                                        <button onClick={() => setProcessingOrderId(req.id)} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">Accept Order</button>
+                                                        <button onClick={() => handleUpdateOrderStatus(req._id, 'rejected')} className="flex-1 py-2.5 bg-white border border-red-100 text-red-500 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-red-50 transition-all active:scale-95">Reject</button>
+                                                        <button onClick={() => setProcessingOrderId(req._id)} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">Accept Order</button>
                                                     </>
                                                 )}
                                             </div>
@@ -453,8 +428,30 @@ const MaterialsCatalog = () => {
                                         <input required type="text" value={formData.unit} onChange={(e) => setFormData({ ...formData, unit: e.target.value })} className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-[13px] font-medium" placeholder="per bag" />
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Image URL</label>
-                                        <input type="text" value={formData.image} onChange={(e) => setFormData({ ...formData, image: e.target.value })} className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-[13px] font-medium" placeholder="https://..." />
+                                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Material Image</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex-shrink-0">
+                                                {formData.image ? (
+                                                    <img src={typeof formData.image === 'string' ? formData.image : URL.createObjectURL(formData.image)} className="w-full h-full object-cover" alt="Preview" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="relative flex-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => setFormData({ ...formData, image: e.target.files[0] })}
+                                                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                />
+                                                <div className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-[13px] font-bold text-slate-500 flex items-center justify-between">
+                                                    <span>{formData.image?.name || 'Choose Image...'}</span>
+                                                    <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Brand Management Section */}

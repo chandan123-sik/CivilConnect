@@ -1,97 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAllUsers, updateUserStatus } from '../../../api/adminApi';
 
-const dummyUsers = [
-    {
-        id: 'USR-8921',
-        name: 'Amit Sharma',
-        phone: '+91 98765 43210',
-        email: 'amit.sharma@gmail.com',
-        joinDate: '15 Oct, 2023',
-        status: 'Active',
-        totalRequests: 12,
-        lastActive: '2 hrs ago',
-        avatar: 'AS'
-    },
-    {
-        id: 'USR-8922',
-        name: 'Priya Verma',
-        phone: '+91 87654 32109',
-        email: 'priya.v88@outlook.com',
-        joinDate: '28 Nov, 2023',
-        status: 'Active',
-        totalRequests: 5,
-        lastActive: '1 day ago',
-        avatar: 'PV'
-    },
-    {
-        id: 'USR-8923',
-        name: 'Rahul Desai',
-        phone: '+91 76543 21098',
-        email: 'rahul.desai_client@yahoo.com',
-        joinDate: '02 Jan, 2024',
-        status: 'Suspended',
-        totalRequests: 24,
-        lastActive: '5 days ago',
-        avatar: 'RD'
-    },
-    {
-        id: 'USR-8924',
-        name: 'Sneha Patel',
-        phone: '+91 65432 10987',
-        email: 'sneha.patel.home@xyz.com',
-        joinDate: '14 Feb, 2024',
-        status: 'Active',
-        totalRequests: 2,
-        lastActive: 'Just now',
-        avatar: 'SP'
-    },
-    {
-        id: 'USR-8925',
-        name: 'Vikram Singh',
-        phone: '+91 99887 76655',
-        email: 'vikram.singh.build@gmail.com',
-        joinDate: '10 Mar, 2024',
-        status: 'Blocked',
-        totalRequests: 0,
-        lastActive: '1 month ago',
-        avatar: 'VS'
-    },
-    {
-        id: 'USR-8926',
-        name: 'Neha Gupta',
-        phone: '+91 88776 65544',
-        email: 'neha.g_design@gmail.com',
-        joinDate: '22 Mar, 2024',
-        status: 'Active',
-        totalRequests: 8,
-        lastActive: '3 hrs ago',
-        avatar: 'NG'
-    }
-];
+// Dummy data removed for real API integration
 
 const UserManagement = () => {
-    const [users, setUsers] = useState(dummyUsers);
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
 
+    const fetchUsers = async () => {
+        setLoading(true);
+        try {
+            const data = await getAllUsers();
+            setUsers(data);
+        } catch (err) {
+            console.error("Fetch users error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
     // Filter Logic
     const filteredUsers = users.filter(user => {
-        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.phone.includes(searchTerm) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'All' || user.status === statusFilter;
+        const matchesSearch = (user.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                             (user.phone || '').includes(searchTerm) || 
+                             (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === 'All' || 
+                             (statusFilter === 'Active' && user.isActive) ||
+                             (statusFilter === 'Suspended' && !user.isActive);
         return matchesSearch && matchesStatus;
     });
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case 'Active':
-                return 'bg-green-100 text-green-700 border-green-200';
-            case 'Suspended':
-                return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'Blocked':
-                return 'bg-red-100 text-red-700 border-red-200';
-            default:
-                return 'bg-slate-100 text-slate-700 border-slate-200';
-        }
+    const getStatusStyle = (user) => {
+        if (!user) return 'bg-slate-100 text-slate-600 border-slate-200';
+        if (!user.isActive) return 'bg-red-100 text-red-700 border-red-200';
+        return 'bg-green-100 text-green-700 border-green-200';
     };
 
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
@@ -103,8 +51,13 @@ const UserManagement = () => {
         status: 'Active'
     });
 
-    const handleToggleStatus = (userId, newStatus) => {
-        setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+    const handleToggleStatus = async (userId, currentStatus) => {
+        try {
+            await updateUserStatus(userId, !currentStatus);
+            fetchUsers();
+        } catch (err) {
+            alert("Status update failed");
+        }
     };
 
     const handleExportCSV = () => {
@@ -186,10 +139,9 @@ const UserManagement = () => {
             {/* ── Metric Cards ── */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 {[
-                    { label: 'Total Clients', value: '1,248', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', color: 'text-blue-500', bg: 'bg-blue-50' },
-                    { label: 'Active Today', value: '342', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', color: 'text-green-500', bg: 'bg-green-50' },
-                    { label: 'New This Month', value: '+128', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-purple-500', bg: 'bg-purple-50' },
-                    { label: 'Suspended Accts', value: '14', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'text-amber-500', bg: 'bg-amber-50' }
+                    { label: 'Total Clients', value: users.length, icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', color: 'text-blue-500', bg: 'bg-blue-50' },
+                    { label: 'Active Today', value: users.filter(u => u.isActive).length, icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', color: 'text-green-500', bg: 'bg-green-50' },
+                    { label: 'Offline Accts', value: users.filter(u => !u.isActive).length, icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'text-amber-500', bg: 'bg-amber-50' }
                 ].map((stat, idx) => (
                     <div key={idx} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4 relative overflow-hidden group">
                         <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center shrink-0`}>
@@ -255,15 +207,15 @@ const UserManagement = () => {
                         <tbody className="divide-y divide-slate-50">
                             {filteredUsers.length > 0 ? (
                                 filteredUsers.map((user) => (
-                                    <tr key={user.id} className="hover:bg-slate-50/80 transition-colors group">
+                                    <tr key={user._id} className="hover:bg-slate-50/80 transition-colors group">
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center text-slate-500 font-bold text-sm shrink-0 shadow-sm">
-                                                    {user.avatar}
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-bold text-sm shrink-0 shadow-sm">
+                                                    {(user.fullName || 'U').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-slate-900 mb-0.5">{user.name}</p>
-                                                    <p className="text-[11px] font-medium text-slate-400">ID: {user.id} • Joined {user.joinDate}</p>
+                                                    <p className="text-sm font-bold text-slate-900 mb-0.5">{user.fullName}</p>
+                                                    <p className="text-[11px] font-medium text-slate-400">ID: {user._id} • Joined {new Date(user.createdAt).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -274,8 +226,8 @@ const UserManagement = () => {
                                             </div>
                                         </td>
                                         <td className="py-4 px-6">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(user.status)}`}>
-                                                {user.status}
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(user)}`}>
+                                                {user.isActive ? 'Active' : 'Suspended'}
                                             </span>
                                         </td>
                                         <td className="py-4 px-6">
@@ -290,22 +242,14 @@ const UserManagement = () => {
                                                 <button onClick={() => setViewingUser(user)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="View Profile">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                                 </button>
-                                                {/* Action: Suspend/Lock */}
-                                                {user.status !== 'Blocked' && (
-                                                    <button onClick={() => handleToggleStatus(user.id, user.status === 'Suspended' ? 'Active' : 'Suspended')} className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors" title={user.status === 'Suspended' ? "Unsuspend User" : "Suspend User"}>
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                                    </button>
-                                                )}
-                                                {/* Action: Block/Ban */}
-                                                {user.status !== 'Blocked' ? (
-                                                    <button onClick={() => handleToggleStatus(user.id, 'Blocked')} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Block User">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                                                    </button>
-                                                ) : (
-                                                    <button onClick={() => handleToggleStatus(user.id, 'Active')} className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Unblock User">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                    </button>
-                                                )}
+                                                {/* Action: Toggle Status */}
+                                                <button onClick={() => handleToggleStatus(user._id, user.isActive)} className={`p-2 rounded-lg transition-colors ${user.isActive ? 'text-slate-400 hover:text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-green-500 hover:bg-green-50'}`} title={user.isActive ? "Suspend User" : "Activate User"}>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                </button>
+                                                {/* Action: Delete user or more actions */}
+                                                <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -457,45 +401,62 @@ const UserManagement = () => {
                     ></div>
 
                     <div className="relative bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        {/* Header Banner */}
-                        <div className={`h-24 ${viewingUser.status === 'Active' ? 'bg-gradient-to-r from-green-500 to-green-600' : viewingUser.status === 'Suspended' ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-red-500 to-red-600'}`}></div>
+                        {/* Header Banner — based on real isActive field */}
+                        <div className={`h-24 ${
+                            viewingUser.isActive
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                                : 'bg-gradient-to-r from-red-500 to-rose-600'
+                        }`}></div>
 
-                        {/* Profile Info */}
                         <div className="px-6 pb-6 relative">
-                            {/* Avatar pushing up into banner */}
                             <div className="flex justify-between items-end -mt-10 mb-4">
+                                {/* Avatar — initials from fullName */}
                                 <div className="w-20 h-20 rounded-2xl bg-white p-1.5 shadow-lg">
-                                    <div className="w-full h-full rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-black text-2xl border border-slate-200">
-                                        {viewingUser.avatar}
-                                    </div>
+                                    {viewingUser.profileImage ? (
+                                        <img src={viewingUser.profileImage} className="w-full h-full rounded-xl object-cover" alt="User" />
+                                    ) : (
+                                        <div className="w-full h-full rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-black text-xl border border-slate-200">
+                                            {(viewingUser.fullName || 'U').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                        </div>
+                                    )}
                                 </div>
-                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(viewingUser.status)} bg-opacity-100`}>
-                                    {viewingUser.status}
+                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(viewingUser)}`}>
+                                    {viewingUser.isActive ? 'Active' : 'Suspended'}
                                 </span>
                             </div>
 
                             <div className="mb-6">
-                                <h3 className="text-xl font-black text-slate-800">{viewingUser.name}</h3>
-                                <p className="text-[12px] font-bold text-slate-400">Client ID: {viewingUser.id}</p>
+                                <h3 className="text-xl font-black text-slate-800">{viewingUser.fullName || 'Name not set'}</h3>
+                                <p className="text-[12px] font-bold text-slate-400">Client ID: {viewingUser._id}</p>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3">
+                                {/* Contact Info */}
                                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Contact Information</p>
-                                    <p className="text-[13px] font-semibold text-slate-700 mb-0.5">{viewingUser.phone}</p>
-                                    <p className="text-[13px] text-slate-500">{viewingUser.email}</p>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contact Information</p>
+                                    <p className="text-[13px] font-semibold text-slate-700 mb-0.5">📞 {viewingUser.phone || 'N/A'}</p>
+                                    <p className="text-[13px] text-slate-500">✉️ {viewingUser.email || 'N/A'}</p>
                                 </div>
 
+                                {/* Location */}
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Location</p>
+                                    <p className="text-[13px] font-semibold text-slate-700">
+                                        {[viewingUser.area, viewingUser.city].filter(Boolean).join(', ') || 'N/A'}
+                                    </p>
+                                </div>
+
+                                {/* Gender & Joined */}
                                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 grid grid-cols-2 gap-4">
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Platform Activity</p>
-                                        <p className="text-[18px] font-black text-slate-800">{viewingUser.totalRequests}</p>
-                                        <p className="text-[11px] font-medium text-slate-500">Service Requests</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender</p>
+                                        <p className="text-[14px] font-bold text-slate-700">{viewingUser.gender || 'N/A'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Last Seen</p>
-                                        <p className="text-[13px] font-bold text-slate-700 mt-1">{viewingUser.lastActive}</p>
-                                        <p className="text-[11px] font-medium text-slate-500">Joined: {viewingUser.joinDate}</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Joined</p>
+                                        <p className="text-[13px] font-bold text-slate-700">
+                                            {viewingUser.createdAt ? new Date(viewingUser.createdAt).toLocaleDateString() : 'N/A'}
+                                        </p>
                                     </div>
                                 </div>
                             </div>

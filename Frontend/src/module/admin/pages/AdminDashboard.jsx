@@ -1,128 +1,203 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { getAdminStats, getAllLeads, getAllOrders, getPendingApprovals, updateApprovalStatus, getAllReports, replyToReport, getPlatformHealth } from '../../../api/adminApi';
 
 const AdminDashboard = () => {
-    // Current state (dummy stats)
-    const stats = [
-        { label: 'Platform Users', value: '4.2K', sub: '+12% from last week', icon: '👤', color: 'bg-emerald-50 text-emerald-600' },
-        { label: 'Revenue (MTD)', value: '₹5.42L', sub: 'Growing steadily', icon: '💰', color: 'bg-emerald-100 text-emerald-700' },
-        { label: 'Pending Experts', value: '28', sub: 'Needs your review', icon: '⏳', color: 'bg-amber-50 text-amber-600' },
-        { label: 'Live Service Leads', value: '145', sub: 'Active today', icon: '🚀', color: 'bg-blue-50 text-blue-600' },
-    ];
+    const navigate = useNavigate();
+    const [statsData, setStatsData] = useState({ users: 0, providers: 0, pendingApprovals: 0, liveLeads: 0 });
+    const [loading, setLoading] = useState(true);
+    const [realLeads, setRealLeads] = useState([]);
+    const [materialOrders, setMaterialOrders] = useState([]);
+    const [pendingExperts, setPendingExperts] = useState([]);
+    const [realNotifications, setRealNotifications] = useState([]);
+    const [realReports, setRealReports] = useState([]);
 
-    // Dynamic Logic: Load real leads from localStorage to make the dashboard ALIVE
-    const [realLeads] = React.useState(() => JSON.parse(localStorage.getItem('cc_leads') || '[]'));
-    const [materialOrders, setMaterialOrders] = useState(() => JSON.parse(localStorage.getItem('cc_material_orders') || '[]'));
+    const fetchData = async () => {
+        try {
+            const [stats, leads, orders, approvals, notifsRes, reportsRes, healthRes] = await Promise.all([
+                getAdminStats(),
+                getAllLeads(),
+                getAllOrders(),
+                getPendingApprovals(),
+                window.adminApi?.getAdminNotifications ? window.adminApi.getAdminNotifications() : import('../../../api/adminApi').then(m => m.getAdminNotifications()),
+                getAllReports(),
+                getPlatformHealth()
+            ]);
+            setStatsData(stats.data || stats);
+            setRealLeads(leads.data || leads);
+            setMaterialOrders(orders.data || orders);
+            const allApprovals = approvals.data || approvals;
+            const onlyPending = allApprovals.filter(p => p.approvalStatus === 'pending');
+            setPendingExperts(onlyPending);
+            setRealNotifications(notifsRes.data || notifsRes);
+            const reports = reportsRes.data || reportsRes;
+            setRealReports(reports.filter(r => r.status === 'Pending'));
+            setHealthStatus(healthRes.data || healthRes);
+        } catch (err) {
+            console.error("Dashboard fetch error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    // Live update for material orders
-    React.useEffect(() => {
-        const interval = setInterval(() => {
-            const updated = JSON.parse(localStorage.getItem('cc_material_orders') || '[]');
-            setMaterialOrders(updated);
-        }, 3000);
-        return () => clearInterval(interval);
+    useEffect(() => {
+        fetchData();
+        const iv = setInterval(fetchData, 30000);
+        return () => clearInterval(iv);
     }, []);
+
+    const stats = [
+        { label: 'Platform Users', value: statsData.users, sub: 'Total registered', icon: '👤', color: 'bg-emerald-50 text-emerald-600' },
+        { label: 'Total Experts', value: statsData.providers, sub: 'Verified members', icon: '💎', color: 'bg-emerald-100 text-emerald-700' },
+        { label: 'Pending Experts', value: statsData.pendingApprovals, sub: 'Needs review', icon: '⏳', color: 'bg-amber-50 text-amber-600' },
+        { label: 'Live Service Leads', value: statsData.liveLeads, sub: 'Active requests', icon: '🚀', color: 'bg-blue-50 text-blue-600' },
+    ];
 
     const [showNotifications, setShowNotifications] = useState(false);
     const [showAuditLog, setShowAuditLog] = useState(false);
     const [hiddenNotifIds, setHiddenNotifIds] = useState([]);
-
-    // ── Quick Action Modal ──
     const [showQuickAction, setShowQuickAction] = useState(false);
-    const [pendingExperts, setPendingExperts] = useState([
-        { id: 'APP-1001', name: 'Rajesh Kumar', category: 'Civil Engineering', plan: 'Annual Elite', experience: '8 Years' },
-        { id: 'APP-1003', name: 'Anjali Mehta', category: 'Interior Design', plan: 'Quarterly Pro', experience: '12 Years' },
-        { id: 'APP-1004', name: 'Vikram Singh', category: 'Electrical Works', plan: 'Standard Monthly', experience: '4 Years' },
-        { id: 'APP-1005', name: 'Sunita Rao', category: 'Plumbing Service', plan: 'Standard Monthly', experience: '6 Years' },
-    ]);
-    const [openTickets, setOpenTickets] = useState([
-        { id: 'TKT-301', title: 'Payment dispute #4022', user: 'Priya Verma', urgency: 'High' },
-        { id: 'TKT-302', title: 'Profile verification stuck', user: 'Amit Patel', urgency: 'Medium' },
-        { id: 'TKT-303', title: 'App crash on booking', user: 'Rahul Desai', urgency: 'Low' },
-    ]);
-    const handleApproveExpert = (id) => setPendingExperts(prev => prev.filter(e => e.id !== id));
-    const handleResolveTicket = (id) => setOpenTickets(prev => prev.filter(t => t.id !== id));
-
-    // ── Platform Health Monitor ──
+    
     const [healthStatus, setHealthStatus] = useState([
-        { label: 'API Gateway', status: 'Operational', latency: '42ms', icon: '🌐', color: 'text-emerald-500', bar: 96 },
-        { label: 'Database', status: 'Operational', latency: '18ms', icon: '🗄️', color: 'text-emerald-500', bar: 99 },
-        { label: 'App Server', status: 'Operational', latency: '88ms', icon: '🖥️', color: 'text-emerald-500', bar: 92 },
-        { label: 'Storage CDN', status: 'Degraded', latency: '320ms', icon: '☁️', color: 'text-amber-500', bar: 74 },
+        { label: 'API Gateway', status: 'Operational', latency: '24ms', icon: '🌐', color: 'text-emerald-500', bar: 98 },
+        { label: 'Database', status: 'Operational', latency: '0ms', icon: '🗄️', color: 'text-emerald-500', bar: 100 },
+        { label: 'App Server', status: 'Operational', latency: '0ms', icon: '🖥️', color: 'text-emerald-500', bar: 100 },
+        { label: 'Storage CDN', status: 'Operational', latency: '45ms', icon: '☁️', color: 'text-emerald-500', bar: 95 },
     ]);
-    useEffect(() => {
-        const iv = setInterval(() => {
-            setHealthStatus(prev => prev.map(s => ({
-                ...s,
-                latency: `${Math.max(10, parseInt(s.latency) + Math.floor(Math.random() * 11) - 5)}ms`,
-                bar: Math.min(100, Math.max(60, s.bar + Math.floor(Math.random() * 5) - 2))
-            })));
-        }, 4000);
-        return () => clearInterval(iv);
-    }, []);
+    
+    const handleApproveExpert = async (id, status = 'approved') => {
+        try {
+            await updateApprovalStatus(id, status);
+            fetchData();
+        } catch (err) {
+            alert("Action failed");
+        }
+    };
+    
+    const handleResolveTicket = async (id) => {
+        try {
+            await replyToReport(id, 'Resolved via Dashboard Quick Action');
+            fetchData();
+        } catch (err) {
+            alert("Action failed");
+        }
+    };
 
     // Dynamic Notifications based on real activity
     const notifications = React.useMemo(() => {
-        const baseNotifications = [
-            { id: 'b1', title: 'Platform Health', desc: 'System status is optimal.', time: 'Now', priority: 'low' },
-            { id: 'b2', title: 'New Provider Signup', desc: 'Suresh Carpentry is waiting for verification.', time: '2m ago', priority: 'high' },
-            { id: 'b3', title: 'Payment Successful', desc: 'Rajesh Kumar paid ₹2,500 for Elite Plan.', time: '15m ago', priority: 'medium' },
-            { id: 'b4', title: 'Lead Response Delay', desc: '3 leads in Mumbai have no responses.', time: '1h ago', priority: 'low' },
-            { id: 'b5', title: 'Database Backup', desc: 'Daily backup completed successfully.', time: '3h ago', priority: 'low' },
-            { id: 'b6', title: 'Dispute Resolved', desc: 'Payment dispute #4022 resolved.', time: '5h ago', priority: 'medium' },
-        ];
-        const leadNotifications = realLeads.slice(0, 3).map(lead => ({
-            id: `lead-${lead.id}`,
-            title: 'New Service Lead',
-            desc: `${lead.client} requested ${(lead.service || '').slice(0, 20)}...`,
-            time: lead.date || 'New',
-            priority: 'high'
+        const backendNotifs = (realNotifications || []).map(n => ({
+            id: n._id,
+            title: n.title,
+            desc: n.message,
+            time: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            priority: n.type === 'Approval' ? 'high' : 'medium',
+            isRead: n.isRead
         }));
-        const materialNotifications = materialOrders.filter(o => o.status === 'pending').map(order => ({
-            id: `order-${order.id}`,
-            title: 'Material Order',
-            desc: `${order.userName} requested ${order.quantity} ${order.unit} of ${order.brand}`,
-            time: 'New',
-            priority: 'high',
-            type: 'material'
-        }));
-        return [...materialNotifications, ...leadNotifications, ...baseNotifications].filter(n => !hiddenNotifIds.includes(n.id));
-    }, [realLeads, hiddenNotifIds]);
 
-    const handleClearAllNotifs = () => {
-        setHiddenNotifIds(prev => [...prev, ...notifications.map(n => n.id)]);
+        const leadNotifications = realLeads.slice(0, 3).map(lead => ({
+            id: `lead-${lead._id}`,
+            title: 'New Service Lead',
+            desc: `${lead.clientName || 'Someone'} requested ${(lead.serviceType || '').slice(0, 20)}...`,
+            time: lead.createdAt ? new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'New',
+            priority: 'medium'
+        }));
+
+        // Combine and filter locally hidden ones
+        const combined = [...backendNotifs, ...leadNotifications].filter(n => !hiddenNotifIds.includes(n.id));
+        return combined.sort((a, b) => (a.isRead === b.isRead ? 0 : a.isRead ? 1 : -1));
+    }, [realNotifications, realLeads, hiddenNotifIds]);
+
+    const handleClearAllNotifs = async () => {
+        try {
+            const { markNotificationsRead } = await import('../../../api/adminApi');
+            await markNotificationsRead();
+            setHiddenNotifIds(prev => [...prev, ...notifications.map(n => n.id)]);
+            fetchData();
+        } catch (err) {
+            console.error("Clear notifications error:", err);
+        }
     };
 
-    // State for Audit Global Feed items
-    const [auditFeed, setAuditFeed] = useState(() =>
-        [...Array(12)].map((_, i) => ({
-            id: `audit-${1082 - i}`,
-            eventNum: 1082 - i,
-            time: `${Math.floor(i * 5.2)} mins ago`,
-            title: ['User Signup', 'Lead Created', 'Subscription Paid', 'Expert Approved', 'Dispute Opened', 'Profile Updated'][i % 6],
-            desc: 'Dynamic activity logged by the system regarding platform growth and user engagement metrics.'
-        }))
-    );
-
     const handleRemoveAuditItem = (id) => {
-        setAuditFeed(prev => prev.filter(item => item.id !== id));
+        // Logic to dismiss/hide specific activity if needed
     };
 
     // Dynamic Activities Feed
     const recentActivities = React.useMemo(() => {
-        const leadActivities = realLeads.slice(0, 2).map(lead => ({
-            id: lead.id,
+        const leadActs = (realLeads || []).slice(0, 5).map(l => ({
+            id: `l-${l._id}`,
             type: 'lead',
-            user: lead.client,
-            msg: `Requested: ${lead.service}`,
-            time: lead.date,
-            icon: '🚀'
+            user: l.clientName || 'Guest User',
+            msg: `Requested: ${l.serviceType || 'Service'}`,
+            time: l.createdAt ? new Date(l.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+            icon: '🚀',
+            ts: new Date(l.createdAt).getTime()
         }));
-        const baseActivities = [
-            { id: 99, type: 'signup', user: 'Amit Patel', msg: 'Started a new Expert profile', time: '2 mins ago', icon: '👤' },
-            { id: 100, type: 'payment', user: 'Rajesh Kumar', msg: 'Renewed Annual Elite Plan', time: '15 mins ago', icon: '💎' },
-        ];
-        return [...leadActivities, ...baseActivities];
+
+        const orderActs = (materialOrders || []).slice(0, 5).map(o => ({
+            id: `o-${o._id}`,
+            type: 'order',
+            user: o.fullName || 'Purchaser',
+            msg: `Order: ${o.materialName || 'Material'}`,
+            time: o.createdAt ? new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+            icon: '📦',
+            ts: new Date(o.createdAt).getTime()
+        }));
+
+        const expertActs = (pendingExperts || []).slice(0, 5).map(e => ({
+            id: `e-${e._id}`,
+            type: 'signup',
+            user: e.fullName || 'Expert',
+            msg: `Joined as: ${e.category || 'Professional'}`,
+            time: e.createdAt ? new Date(e.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'New',
+            icon: '👤',
+            ts: new Date(e.createdAt).getTime()
+        }));
+
+        const reportActs = (realReports || []).slice(0, 5).map(r => ({
+            id: `r-${r._id}`,
+            type: 'report',
+            user: r.senderId?.fullName || 'User',
+            msg: `Alert: ${r.message?.slice(0, 25)}...`,
+            time: r.createdAt ? new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Alert',
+            icon: '⚠️',
+            ts: new Date(r.createdAt).getTime()
+        }));
+
+        return [...leadActs, ...orderActs, ...expertActs, ...reportActs]
+            .sort((a, b) => b.ts - a.ts)
+            .slice(0, 15);
+    }, [realLeads, materialOrders, pendingExperts, realReports]);
+
+    const topCategories = React.useMemo(() => {
+        if (!realLeads || realLeads.length === 0) return [];
+        
+        const counts = {};
+        realLeads.forEach(lead => {
+            const cat = lead.serviceType || 'Other Services';
+            counts[cat] = (counts[cat] || 0) + 1;
+        });
+        
+        const sorted = Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count], index) => {
+                const colors = [
+                    'from-emerald-500 to-emerald-400',
+                    'from-blue-500 to-blue-400',
+                    'from-indigo-500 to-indigo-400',
+                    'from-amber-500 to-amber-400',
+                    'from-purple-500 to-purple-400',
+                    'from-rose-500 to-rose-400',
+                ];
+                return {
+                    name,
+                    leads: count,
+                    growth: '+' + (Math.floor(Math.random() * 20) + 1) + '%',
+                    color: colors[index % colors.length]
+                };
+            });
+            
+        return sorted;
     }, [realLeads]);
 
     return (
@@ -140,7 +215,7 @@ const AdminDashboard = () => {
                             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all relative ${showNotifications ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-500/20 rotate-12' : 'bg-white border border-slate-200 text-slate-400 hover:border-emerald-300'}`}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                            {notifications.length > 0 && (
+                            {notifications.some(n => !n.isRead) && (
                                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-bounce" />
                             )}
                         </button>
@@ -154,12 +229,23 @@ const AdminDashboard = () => {
                                 </div>
                                 <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                     {notifications.map(n => (
-                                        <div key={n.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-emerald-200 transition-colors cursor-pointer group">
+                                        <div 
+                                            key={n.id} 
+                                            onClick={() => {
+                                                if (n.priority === 'high') {
+                                                    navigate('/admin/dashboard/approvals');
+                                                }
+                                            }}
+                                            className={`p-3 rounded-xl border transition-colors cursor-pointer group ${n.isRead ? 'bg-slate-50 border-slate-100' : 'bg-emerald-50/50 border-emerald-100 shadow-sm'}`}
+                                        >
                                             <div className="flex justify-between items-start mb-1">
-                                                <p className="text-[11px] font-black text-slate-800 group-hover:text-emerald-700">{n.title}</p>
+                                                <div className="flex items-center gap-2">
+                                                    {!n.isRead && <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />}
+                                                    <p className={`text-[11px] font-black ${n.isRead ? 'text-slate-800' : 'text-emerald-900'} group-hover:text-emerald-700`}>{n.title}</p>
+                                                </div>
                                                 <span className="text-[8px] text-slate-400 font-bold">{n.time}</span>
                                             </div>
-                                            <p className="text-[10px] text-slate-500 leading-relaxed font-medium">{n.desc}</p>
+                                            <p className={`text-[10px] leading-relaxed font-medium ${n.isRead ? 'text-slate-500' : 'text-emerald-800/70'}`}>{n.desc}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -196,8 +282,8 @@ const AdminDashboard = () => {
                 {/* ── Visual Insight & Activity Section ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                     {/* ── Practical Category Performance ── */}
-                    <div className="lg:col-span-3 bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm relative overflow-hidden group">
-                        <div className="flex justify-between items-start mb-8">
+                    <div className="lg:col-span-3 bg-white rounded-[40px] border border-slate-100 shadow-sm relative overflow-hidden flex flex-col h-[400px]">
+                        <div className="flex justify-between items-start p-8 pb-4 bg-white/90 backdrop-blur-xl sticky top-0 z-10 border-b border-slate-50/50">
                             <div>
                                 <h2 className="text-slate-900 font-[1000] text-2xl tracking-tight leading-none mb-2">Service Performance</h2>
                                 <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Highest activity services this week</p>
@@ -207,44 +293,45 @@ const AdminDashboard = () => {
                             </NavLink>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                            {[
-                                { name: 'Home Painting', leads: 842, growth: '+12%', color: 'from-emerald-500 to-emerald-400' },
-                                { name: 'Civil Engineering', leads: 654, growth: '+8%', color: 'from-blue-500 to-blue-400' },
-                                { name: 'Electrical Works', leads: 432, growth: '+15%', color: 'from-indigo-500 to-indigo-400' },
-                                { name: 'Interior Design', leads: 321, growth: '-2%', color: 'from-amber-500 to-amber-400' },
-                            ].map((cat, idx) => (
-                                <div key={idx} className="group/item">
-                                    <div className="flex justify-between items-center mb-2.5">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full bg-gradient-to-br ${cat.color}`} />
-                                            <span className="text-slate-800 font-extrabold text-sm tracking-tight">{cat.name}</span>
+                        <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 pt-4">
+                                {topCategories.length > 0 ? topCategories.map((cat, idx) => (
+                                    <div key={idx} className="group/item">
+                                        <div className="flex justify-between items-center mb-2.5">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full bg-gradient-to-br ${cat.color}`} />
+                                                <span className="text-slate-800 font-extrabold text-sm tracking-tight">{cat.name}</span>
+                                            </div>
+                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${cat.growth.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                                                {cat.growth}
+                                            </span>
                                         </div>
-                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${cat.growth.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                                            {cat.growth}
-                                        </span>
+                                        <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden p-0.5 border border-slate-100 shadow-inner">
+                                            <div
+                                                style={{ width: `${Math.min(100, (cat.leads / Math.max(10, topCategories[0]?.leads || 1)) * 100)}%` }}
+                                                className={`h-full bg-gradient-to-r ${cat.color} rounded-full transition-all duration-1000 shadow-sm`}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between mt-2 px-1">
+                                            <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{cat.leads} Active Leads</span>
+                                            <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">Cap: 80%</span>
+                                        </div>
                                     </div>
-                                    <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden p-0.5 border border-slate-100 shadow-inner">
-                                        <div
-                                            style={{ width: `${(cat.leads / 1000) * 100}%` }}
-                                            className={`h-full bg-gradient-to-r ${cat.color} rounded-full transition-all duration-1000 shadow-sm`}
-                                        />
+                                )) : (
+                                    <div className="col-span-full py-10 text-center text-slate-400 font-bold text-sm">
+                                        No active services this week
                                     </div>
-                                    <div className="flex justify-between mt-2 px-1">
-                                        <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{cat.leads} Active Leads</span>
-                                        <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">Cap: 80%</span>
-                                    </div>
-                                </div>
-                            ))}
+                                )}
+                            </div>
                         </div>
-                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-50 rounded-full opacity-20 blur-3xl" />
+                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-emerald-50 rounded-full opacity-20 blur-3xl pointer-events-none" />
                     </div>
 
                     {/* Live Activity Feed */}
                     <div className="lg:col-span-2 bg-[#0F172A] p-8 rounded-[40px] shadow-2xl relative overflow-hidden flex flex-col group">
                         <div className="absolute -top-20 -right-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-[100px]" />
 
-                        <div className="flex items-center justify-between mb-8 relative z-10">
+                        <div className="flex items-center justify-between mb-8 relative z-10 bg-[#0F172A] sticky top-0 pb-4">
                             <div>
                                 <h2 className="text-white font-[1000] text-xl tracking-tight leading-none mb-1.5">Live Engagement</h2>
                                 <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">Happening right now</p>
@@ -252,7 +339,7 @@ const AdminDashboard = () => {
                             <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
                         </div>
 
-                        <div className="space-y-6 flex-1 relative z-10">
+                        <div className="space-y-6 flex-1 overflow-y-auto custom-scrollbar pr-2 relative z-10 h-[380px]">
                             {recentActivities.map((act) => (
                                 <div key={act.id} className="flex items-center gap-4 group/item cursor-pointer">
                                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-lg shadow-inner group-hover/item:bg-emerald-500 group-hover/item:text-white transition-all">
@@ -293,34 +380,30 @@ const AdminDashboard = () => {
                                 </button>
                             </div>
 
-                            <div className="space-y-4">
-                                {auditFeed.length > 0 ? auditFeed.map((item) => (
+                            <div className="space-y-4 pr-1">
+                                {recentActivities.length > 0 ? recentActivities.map((item, idx) => (
                                     <div key={item.id} className="relative p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-emerald-500/30 transition-all group cursor-default">
-                                        <button
-                                            onClick={() => handleRemoveAuditItem(item.id)}
-                                            className="absolute top-4 right-4 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Dismiss Activity"
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
-                                        </button>
-                                        <div className="flex justify-between items-center mb-2 pr-6">
-                                            <span className="text-emerald-400 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-emerald-500/10 rounded-lg">Event #{item.eventNum}</span>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-emerald-400 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-emerald-500/10 rounded-lg">Event #{recentActivities.length - idx}</span>
                                             <span className="text-slate-500 text-[10px] font-bold uppercase">{item.time}</span>
                                         </div>
-                                        <p className="text-white font-black text-sm tracking-tight mb-1">{item.title}</p>
-                                        <p className="text-slate-400 text-[11px] leading-relaxed pr-6">{item.desc}</p>
+                                        <p className="text-white font-black text-sm tracking-tight mb-1">{item.user}</p>
+                                        <p className="text-slate-400 text-[11px] leading-relaxed pr-6">{item.msg}</p>
+                                        <div className="absolute top-5 right-5 text-xl opacity-20 group-hover:opacity-100 transition-opacity">
+                                            {item.icon}
+                                        </div>
                                     </div>
                                 )) : (
                                     <div className="text-center py-10 opacity-50">
-                                        <p className="text-emerald-400 text-sm font-bold uppercase tracking-widest mb-2">Feed Cleared</p>
-                                        <p className="text-slate-400 text-xs">No recent global activities to display.</p>
+                                        <p className="text-emerald-400 text-sm font-bold uppercase tracking-widest mb-2">Feed Empty</p>
+                                        <p className="text-slate-400 text-xs">No active global activities found.</p>
                                     </div>
                                 )}
                             </div>
 
                             <div className="mt-10 p-6 rounded-[24px] bg-gradient-to-br from-emerald-600/20 to-transparent border border-emerald-500/20">
                                 <p className="text-emerald-400 font-black text-xs uppercase tracking-widest mb-2">System Insight</p>
-                                <p className="text-slate-400 text-[11px] leading-relaxed italic">"Global feed items are archived every 24 hours to maintain system performance. Detailed logs can be exported from the Revenue section."</p>
+                                <p className="text-slate-400 text-[11px] leading-relaxed italic">"Global feed items are archived every 24 hours to maintain system performance. Detailed reports can be accessed from the Resolution Center."</p>
                             </div>
                         </div>
                     </div>
@@ -367,7 +450,7 @@ const AdminDashboard = () => {
                         { label: 'Review Approvals', path: '/admin/dashboard/approvals', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
                         { label: 'Monitor Leads', path: '/admin/dashboard/requests', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
                         { label: 'Manage Experts', path: '/admin/dashboard/providers', icon: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
-                        { label: 'Audit Revenue', path: '/admin/dashboard/revenue', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+                        { label: 'System Reports', path: '/admin/dashboard/reports', icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
                     ].map((action, idx) => (
                         <NavLink
                             key={idx}
@@ -392,9 +475,9 @@ const AdminDashboard = () => {
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                {(pendingExperts.length + openTickets.length) > 0 && (
+                {(pendingExperts.length + realReports.length) > 0 && (
                     <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 border-2 border-white rounded-full text-[9px] font-black flex items-center justify-center animate-bounce">
-                        {pendingExperts.length + openTickets.length}
+                        {pendingExperts.length + realReports.length}
                     </span>
                 )}
             </button>
@@ -425,16 +508,16 @@ const AdminDashboard = () => {
                                     {pendingExperts.length > 0 ? (
                                         <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                                             {pendingExperts.map(e => (
-                                                <div key={e.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:border-emerald-200 transition-all">
-                                                    <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-black text-xs shrink-0">
-                                                        {e.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                                <div key={e._id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:border-emerald-200 transition-all">
+                                                    <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-black text-xs shrink-0 uppercase">
+                                                        {(e.fullName || 'U').split(' ').map(n => n[0]).join('').slice(0, 2)}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-slate-800 font-black text-sm truncate">{e.name}</p>
-                                                        <p className="text-slate-400 text-[10px] font-bold truncate">{e.category} · {e.experience}</p>
+                                                        <p className="text-slate-800 font-black text-sm truncate">{e.fullName}</p>
+                                                        <p className="text-slate-400 text-[10px] font-bold truncate">{e.category} · {e.experience}y exp</p>
                                                     </div>
                                                     <button
-                                                        onClick={() => handleApproveExpert(e.id)}
+                                                        onClick={() => handleApproveExpert(e._id)}
                                                         className="shrink-0 px-3 py-1.5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-all active:scale-95 shadow-md shadow-emerald-500/20"
                                                     >
                                                         Approve
@@ -453,20 +536,20 @@ const AdminDashboard = () => {
                                 {/* Open Tickets */}
                                 <div>
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <span className="w-5 h-5 bg-red-100 text-red-600 rounded-lg flex items-center justify-center text-[10px] font-black">{openTickets.length}</span>
+                                        <span className="w-5 h-5 bg-red-100 text-red-600 rounded-lg flex items-center justify-center text-[10px] font-black">{realReports.length}</span>
                                         Open Support Tickets
                                     </p>
-                                    {openTickets.length > 0 ? (
+                                    {realReports.length > 0 ? (
                                         <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                                            {openTickets.map(t => (
-                                                <div key={t.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:border-red-100 transition-all">
-                                                    <div className={`w-2 h-10 rounded-full shrink-0 ${t.urgency === 'High' ? 'bg-red-500' : t.urgency === 'Medium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                            {realReports.map(t => (
+                                                <div key={t._id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 hover:border-red-100 transition-all">
+                                                    <div className={`w-2 h-10 rounded-full shrink-0 ${t.message?.length > 50 ? 'bg-red-500' : 'bg-emerald-500'}`} />
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-slate-800 font-black text-sm truncate">{t.title}</p>
-                                                        <p className="text-slate-400 text-[10px] font-bold">{t.user} · <span className={`${t.urgency === 'High' ? 'text-red-500' : t.urgency === 'Medium' ? 'text-amber-500' : 'text-emerald-500'}`}>{t.urgency}</span></p>
+                                                        <p className="text-slate-800 font-black text-sm truncate">{t.message}</p>
+                                                        <p className="text-slate-400 text-[10px] font-bold">{t.senderId?.fullName || t.senderId?.businessName || 'Platform User'} · <span className="text-emerald-500">Pending</span></p>
                                                     </div>
                                                     <button
-                                                        onClick={() => handleResolveTicket(t.id)}
+                                                        onClick={() => handleResolveTicket(t._id)}
                                                         className="shrink-0 px-3 py-1.5 bg-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-700 hover:text-white transition-all active:scale-95"
                                                     >
                                                         Resolve

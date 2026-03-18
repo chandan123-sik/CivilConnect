@@ -1,39 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getBanners } from '../api/publicApi';
 
 const defaultSlides = [
     {
         title: "Let's get started",
-        desc: "Build your dream project with verified experts and quality materials today.",
-        img: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=800&auto=format"
+        description: "Build your dream project with verified experts and quality materials today.",
+        image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=800&auto=format"
     },
     {
         title: "Manage Everything",
-        desc: "From labor tracking to material audits, manage your site directly with ease.",
-        img: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=800&auto=format"
+        description: "From labor tracking to material audits, manage your site directly with ease.",
+        image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=800&auto=format"
     },
     {
         title: "Verified Experts",
-        desc: "Connect with certified engineers and contractors for safe construction.",
-        img: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=800&auto=format"
+        description: "Connect with certified engineers and contractors for safe construction.",
+        image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=800&auto=format"
     }
 ];
 
 const GetStarted = () => {
     const navigate = useNavigate();
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [slides, setSlides] = useState(defaultSlides);
+    const intervalRef = useRef(null);
 
-    const slides = React.useMemo(() => {
-        const saved = localStorage.getItem('cc_get_started_banners');
-        return saved ? JSON.parse(saved) : defaultSlides;
+    useEffect(() => {
+        const fetchBanners = async () => {
+            try {
+                const data = await getBanners('get-started');
+                if (data && data.length > 0) {
+                    setSlides(data);
+                    setCurrentSlide(0);
+                }
+            } catch (err) {
+                console.error("Failed to fetch banners. Using defaults.", err);
+            }
+        };
+        fetchBanners();
     }, []);
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentSlide(prev => (prev + 1) % slides.length);
+        if (slides.length <= 1) return;
+
+        intervalRef.current = setInterval(() => {
+            setCurrentSlide((prev) => (prev + 1) % slides.length);
         }, 3000);
-        return () => clearInterval(interval);
-    }, []);
+
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
+    }, [slides.length]);
 
     return (
         <div className="h-screen bg-white flex flex-col items-center px-8 pt-20 pb-12 overflow-hidden">
@@ -57,30 +75,41 @@ const GetStarted = () => {
                 }
             `}</style>
 
-            {/* Central Circle Image Slider - MOVED UP */}
-            <div className="relative w-full flex justify-center mb-6">
-                <div key={currentSlide} className="w-64 h-64 rounded-full overflow-hidden border-[6px] border-[#7C3AED]/10 shadow-2xl img-animate z-10">
-                    <img
-                        key={slides[currentSlide].img}
-                        src={slides[currentSlide].img}
-                        alt="Onboarding"
-                        className="w-full h-full object-cover"
-                    />
-                </div>
+            {/* Central Circle Image Slider */}
+            <div className="relative w-full flex justify-center mb-6 min-h-[256px]">
+                {slides.map((slide, index) => (
+                    <div 
+                        key={`slide-${index}`} 
+                        className={`absolute w-64 h-64 rounded-full overflow-hidden border-[6px] border-[#7C3AED]/10 shadow-2xl z-10 transition-all duration-700 ease-in-out ${index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+                    >
+                        <img
+                            src={`${slide.image}${slide.image.includes('?') ? '&' : '?'}w=600&q=70&fm=webp`}
+                            alt={slide.title}
+                            fetchPriority={index === 0 ? "high" : "low"}
+                            loading={index === 0 ? "eager" : "lazy"}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                ))}
                 {/* Decorative Elements */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 border-2 border-dashed border-purple-100 rounded-full animate-spin-slow opacity-50" />
             </div>
 
             {/* Text & Indicators Section */}
-            <div className="w-full text-center flex flex-col items-center bg-white z-10">
-                <div key={`text-${currentSlide}`} className="text-animate mb-6">
-                    <h1 className="text-2xl font-[1000] text-slate-900 tracking-tight mb-3">
-                        {slides[currentSlide].title}
-                    </h1>
-                    <p className="text-slate-500/80 text-sm font-semibold leading-relaxed px-4 max-w-[300px] mx-auto">
-                        {slides[currentSlide].desc}
-                    </p>
-                </div>
+            <div className="w-full text-center flex flex-col items-center bg-white z-10 mt-4 min-h-[140px] relative">
+                {slides.map((slide, index) => (
+                    <div 
+                        key={`text-${index}`} 
+                        className={`transition-all duration-500 space-y-3 w-full ${index === currentSlide ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-4 absolute inset-x-0 pointer-events-none'}`}
+                    >
+                        <h1 className="text-2xl font-[1000] text-slate-900 tracking-tight">
+                            {slide.title}
+                        </h1>
+                        <p className="text-slate-500/80 text-sm font-semibold leading-relaxed px-4 max-w-[300px] mx-auto">
+                            {slide.description}
+                        </p>
+                    </div>
+                ))}
 
                 {/* Progress Indicators */}
                 <div className="flex gap-2 mb-8">
@@ -94,7 +123,7 @@ const GetStarted = () => {
                 </div>
             </div>
 
-            {/* Bottom Button Section - MOVED DOWN SLIGHTLY */}
+            {/* Bottom Button Section */}
             <div className="w-full mt-auto pb-10">
                 <button
                     onClick={() => navigate('/auth/mobile-input')}

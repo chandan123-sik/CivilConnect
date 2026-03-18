@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { completeProfile } from '../api/userApi';
 
 const CompleteProfile = () => {
     const navigate = useNavigate();
@@ -13,6 +14,7 @@ const CompleteProfile = () => {
     });
     const [preview, setPreview] = useState(null);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleInput = (e) => {
         const { name, value } = e.target;
@@ -30,27 +32,38 @@ const CompleteProfile = () => {
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!formData.fullName.trim() || !formData.email.trim() || !formData.city.trim() || !formData.area.trim() || !formData.gender) {
             setError('Please fill all mandatory fields');
             return;
         }
 
-        // Save profile info to localStorage
-        localStorage.setItem('user_name', formData.fullName.trim());
-        localStorage.setItem('user_email', formData.email.trim());
-        localStorage.setItem('user_city', formData.city.trim());
-        localStorage.setItem('user_area', formData.area.trim());
-        localStorage.setItem('user_gender', formData.gender);
-        if (preview) {
-            localStorage.setItem('user_profile_image', preview);
-        }
-        localStorage.setItem('profile_complete', 'true');
-        localStorage.setItem('role', 'user');
-        localStorage.setItem('last_user_role', 'user');
+        setLoading(true);
+        try {
+            const data = new FormData();
+            Object.keys(formData).forEach(key => {
+                if (formData[key]) data.append(key, formData[key]);
+            });
 
-        // Redirect to user panel
-        navigate('/user/home');
+            const res = await completeProfile(data);
+            
+            // Update localStorage
+            localStorage.setItem('cc_user_token', res.token || localStorage.getItem('cc_user_token') || localStorage.getItem('cc_temp_token') || localStorage.getItem('access_token'));
+            localStorage.setItem('cc_current_role', 'user');
+            localStorage.setItem('cc_user_data', JSON.stringify(res.user || res));
+            localStorage.setItem('profile_complete', 'true');
+            
+            // CLEANUP: Remove temporary onboarding tokens
+            localStorage.removeItem('cc_temp_token');
+            localStorage.removeItem('access_token');
+            
+            // Redirect to user panel
+            navigate('/user/home');
+        } catch (err) {
+            setError(err || "Failed to complete profile");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -169,11 +182,12 @@ const CompleteProfile = () => {
 
                         <div className="pt-6">
                             <button
-                                onClick={handleSubmit}
-                                className="w-full bg-[#7C3AED] text-white py-5 rounded-[24px] text-sm font-[1000] uppercase tracking-[0.3em] shadow-2xl shadow-purple-900/30 active:scale-95 transition-all outline-none"
-                            >
-                                Complete registration
-                            </button>
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className={`w-full py-4 mt-8 rounded-[20px] font-[1000] text-[15px] uppercase tracking-widest shadow-xl transition-all active:scale-95 ${loading ? 'bg-slate-200 text-slate-400' : 'bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] text-white shadow-[#7C3AED]/20'}`}
+                    >
+                        {loading ? 'Submitting...' : 'Complete Profile'}
+                    </button>
                         </div>
                     </div>
                 </div>

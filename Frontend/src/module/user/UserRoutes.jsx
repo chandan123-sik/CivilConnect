@@ -10,7 +10,7 @@ import Profile from '../pages/Profile';
 
 // Thin protected check — redirect to auth if no token
 const RequireAuth = ({ children }) => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('cc_user_token');
     if (!token) return <Navigate to="/" replace />;
     return children;
 };

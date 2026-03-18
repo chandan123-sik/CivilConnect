@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { adminLogin } from '../../../api/authApi';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
@@ -7,17 +8,24 @@ const AdminLogin = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
-        // Exact match as per user request
-        if (username === 'Chandan' && password === 'code4898') {
-            console.log('Login successful');
+        try {
+            const res = await adminLogin(username, password);
+            localStorage.setItem('cc_admin_token', res.token);
+            localStorage.setItem('cc_current_role', 'admin');
+            localStorage.setItem('cc_admin_data', JSON.stringify({ username: res.username }));
+            
             navigate('/admin/dashboard/home');
-        } else {
-            setError('Invalid credentials');
+        } catch (err) {
+            setError(err || 'Invalid credentials');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -79,9 +87,10 @@ const AdminLogin = () => {
                     <div className="pt-2">
                         <button
                             type="submit"
-                            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-green-500/20 active:scale-[0.98] transition-all"
+                            disabled={loading}
+                            className={`w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-green-500/20 active:scale-[0.98] transition-all ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
-                            Sign In to Dashboard
+                            {loading ? 'Authenticating...' : 'Sign In to Dashboard'}
                         </button>
                     </div>
 

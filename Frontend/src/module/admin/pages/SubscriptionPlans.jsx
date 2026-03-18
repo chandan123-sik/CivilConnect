@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getPlans, createPlan, updatePlan, deletePlan, getAllProviders } from '../../../api/adminApi';
 
 // Style mapping for premium plan accents
 const planStyles = {
@@ -8,27 +9,54 @@ const planStyles = {
     amber: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', accent: 'bg-amber-500' },
 };
 
-const initialPlans = [
-    { id: 'p-001', name: 'Standard Monthly', price: 499, duration: 30, tag: 'Monthly', features: ['Public Profile Listing', 'Search Priority: Low', 'Basic Leads Access'], status: 'Active', subscribers: 125, color: 'emerald' },
-    { id: 'p-002', name: 'Quarterly Pro', price: 1299, duration: 90, tag: 'Quarterly', features: ['Public Profile Listing', 'Search Priority: Medium', 'Priority Support', 'Advanced Analytics'], status: 'Active', subscribers: 84, color: 'blue' },
-    { id: 'p-003', name: 'Annual Elite', price: 4499, duration: 365, tag: 'Yearly', features: ['Public Profile Listing', 'Search Priority: High', 'Portfolio Management', 'Verified Badge', '24/7 Support'], status: 'Active', subscribers: 42, color: 'indigo' },
-];
-
-const initialSubscribers = [
-    { id: 'sub-1', provider: 'Rajesh Kumar', plan: 'Annual Elite', startDate: '2025-05-10', endDate: '2026-05-09', status: 'Active', revenue: '₹4,499' },
-    { id: 'sub-2', provider: 'Amit Sharma', plan: 'Quarterly Pro', startDate: '2026-01-01', endDate: '2026-03-31', status: 'Expiring Soon', revenue: '₹1,299' },
-    { id: 'sub-3', provider: 'Anjali Mehta', plan: 'Standard Monthly', startDate: '2026-02-15', endDate: '2026-03-14', status: 'Active', revenue: '₹499' },
-    { id: 'sub-4', provider: 'Suresh Patil', plan: 'Annual Elite', startDate: '2025-08-20', endDate: '2026-08-19', status: 'Active', revenue: '₹4,499' },
-    { id: 'sub-5', provider: 'Vikram Singh', plan: 'Quarterly Pro', startDate: '2025-12-10', endDate: '2026-03-09', status: 'Expiring Soon', revenue: '₹1,299' },
-];
+// Dummy data replaced by backend integration
 
 const SubscriptionPlans = () => {
-    const [plans, setPlans] = useState(initialPlans);
-    const [subscribers, setSubscribers] = useState(initialSubscribers);
+    const [plans, setPlans] = useState([]);
+    const [subscribers, setSubscribers] = useState([]);
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [formData, setFormData] = useState({ name: '', price: '', duration: 30, tag: 'Monthly', features: '', color: 'emerald' });
+    const [formData, setFormData] = useState({ name: '', price: '', durationDays: 30, tag: 'Monthly', features: '', color: 'emerald' });
+
+    const fetchData = async () => {
+        try {
+            const [plansData, providersData] = await Promise.all([
+                getPlans(),
+                getAllProviders()
+            ]);
+            
+            // Map subscribers
+            const activeSubs = providersData
+                .filter(p => p.subscriptionId)
+                .map(p => {
+                    const matchedPlan = plansData.find(pl => pl._id === p.subscriptionId);
+                    return {
+                        id: p._id,
+                        provider: p.fullName,
+                        plan: matchedPlan ? matchedPlan.name : 'Unknown',
+                        endDate: p.subscriptionExpiry || new Date(),
+                        status: p.subscriptionExpiry && new Date(p.subscriptionExpiry) > new Date() ? 'Active' : 'Expired',
+                        revenue: `₹${matchedPlan ? matchedPlan.price : 0}`
+                    };
+                });
+                
+            // Update plan subscribers count
+            const mappedPlans = plansData.map(plan => {
+                const subCount = providersData.filter(p => p.subscriptionId === plan._id).length;
+                return { ...plan, subscribers: subCount };
+            });
+
+            setPlans(mappedPlans);
+            setSubscribers(activeSubs);
+        } catch (err) {
+            console.error("Fetch plans error:", err);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     // Calculates days remaining with current date (Simulated)
     const getDaysRemaining = (endDate) => {
@@ -43,43 +71,62 @@ const SubscriptionPlans = () => {
         setFormData({
             name: plan.name,
             price: plan.price,
-            duration: plan.duration,
-            tag: plan.tag,
-            color: plan.color,
+            durationDays: plan.durationDays || plan.duration || 30,
+            tag: plan.tag || 'Monthly',
+            color: plan.color || 'emerald',
             features: plan.features.join(', ')
         });
         setIsPlanModalOpen(true);
     };
 
-    const handleSavePlan = (e) => {
+    const handleSavePlan = async (e) => {
         e.preventDefault();
 
         // Validation: Positive values only
-        if (formData.price <= 0 || formData.duration <= 0) {
+        if (formData.price <= 0 || formData.durationDays <= 0) {
             alert("Price and Duration must be positive numbers.");
             return;
         }
 
-        const updatedPlan = {
-            ...editingPlan,
+        const payload = {
             name: formData.name,
             price: Number(formData.price),
-            duration: Number(formData.duration),
+            durationDays: Number(formData.durationDays),
             tag: formData.tag,
             color: formData.color,
             features: formData.features.split(',').map(f => f.trim())
         };
 
-        if (editingPlan) {
-            setPlans(plans.map(p => p.id === editingPlan.id ? updatedPlan : p));
-        } else {
-            setPlans([...plans, { ...updatedPlan, id: `p-00${plans.length + 1}`, status: 'Active', subscribers: 0 }]);
+        try {
+            if (editingPlan) {
+                await updatePlan(editingPlan._id, payload);
+            } else {
+                await createPlan(payload);
+            }
+            fetchData();
+            setIsPlanModalOpen(false);
+        } catch (err) {
+            alert("Failed to save plan.");
         }
-        setIsPlanModalOpen(false);
     };
 
-    const togglePlanStatus = (id) => {
-        setPlans(plans.map(p => p.id === id ? { ...p, status: p.status === 'Active' ? 'Inactive' : 'Active' } : p));
+    const togglePlanStatus = async (id, currentStatus) => {
+        try {
+            await updatePlan(id, { isActive: !currentStatus });
+            fetchData();
+        } catch (err) {
+            alert("Failed to update status");
+        }
+    };
+
+    const handleDeletePlan = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this plan?")) return;
+        try {
+            await deletePlan(id);
+            fetchData();
+        } catch (err) {
+            alert("Failed to delete plan");
+        }
     };
 
     const filteredSubscribers = subscribers.filter(s =>
@@ -97,7 +144,7 @@ const SubscriptionPlans = () => {
                 </div>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => { setEditingPlan(null); setFormData({ name: '', price: '', duration: 30, tag: 'Monthly', features: '', color: 'emerald' }); setIsPlanModalOpen(true); }}
+                        onClick={() => { setEditingPlan(null); setFormData({ name: '', price: '', durationDays: 30, tag: 'Monthly', features: '', color: 'emerald' }); setIsPlanModalOpen(true); }}
                         className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-[12px] shadow-lg shadow-emerald-500/30 active:scale-95 transition-all outline-none"
                     >
                         Create New Offering
@@ -106,12 +153,14 @@ const SubscriptionPlans = () => {
             </div>
 
             {/* ── Metrics Grid ── */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 {[
                     { label: 'Active Subs', value: plans.reduce((acc, p) => acc + p.subscribers, 0), icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', color: planStyles.emerald },
-                    { label: 'Annual Revenue', value: '₹12.4L', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: planStyles.indigo },
-                    { label: 'Expiring (7D)', value: 12, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: planStyles.amber },
-                    { label: 'Growth Rate', value: '+14.5%', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', color: planStyles.emerald },
+                    { label: 'Expiring (7D)', value: subscribers.filter(s => {
+                        const days = Math.ceil((new Date(s.endDate) - new Date()) / (1000 * 60 * 60 * 24));
+                        return days > 0 && days <= 7;
+                    }).length, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: planStyles.amber },
+                    { label: 'Growth Rate', value: `+${subscribers.length}`, icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', color: planStyles.emerald },
                 ].map((stat, idx) => (
                     <div key={idx} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4 group">
                         <div className={`w-12 h-12 rounded-xl ${stat.color.bg} flex items-center justify-center shrink-0`}>
@@ -138,7 +187,7 @@ const SubscriptionPlans = () => {
                         const isInactive = plan.status === 'Inactive';
 
                         return (
-                            <div key={plan.id} className={`bg-white border-2 rounded-[32px] p-8 relative overflow-hidden group hover:shadow-2xl transition-all duration-500 ${isInactive ? 'opacity-60 grayscale-[0.5] border-slate-100' : `${style.border} border-opacity-50`}`}>
+                            <div key={plan._id} className={`bg-white border-2 rounded-[32px] p-8 relative overflow-hidden group hover:shadow-2xl transition-all duration-500 ${isInactive ? 'opacity-60 grayscale-[0.5] border-slate-100' : `${style.border} border-opacity-50`}`}>
                                 {/* Decorative BG */}
                                 <div className={`absolute top-0 right-0 w-32 h-32 ${style.accent} opacity-5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-700`} />
 
@@ -149,12 +198,15 @@ const SubscriptionPlans = () => {
                                         </span>
                                         {isInactive && <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-widest rounded-md border border-slate-200">Deactivated</span>}
                                     </div>
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => togglePlanStatus(plan.id)} className={`p-2 rounded-lg transition-colors ${isInactive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`} title={isInactive ? "Activate Plan" : "Deactivate Plan"}>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => togglePlanStatus(plan._id, plan.isActive)} className={`p-2 rounded-lg transition-colors ${isInactive ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`} title={isInactive ? "Activate Plan" : "Deactivate Plan"}>
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={isInactive ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" : "M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"} /></svg>
                                         </button>
-                                        <button onClick={() => handleOpenEdit(plan)} className="p-2 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg transition-colors">
+                                        <button onClick={() => handleOpenEdit(plan)} className="p-2 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg transition-colors" title="Edit Plan">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                        </button>
+                                        <button onClick={() => handleDeletePlan(plan._id)} className="p-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors" title="Delete Plan">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                         </button>
                                     </div>
                                 </div>
@@ -163,7 +215,7 @@ const SubscriptionPlans = () => {
                                     <h3 className="text-slate-800 font-[1000] text-2xl tracking-tighter mb-2">{plan.name}</h3>
                                     <div className="flex items-baseline gap-1">
                                         <span className={`text-3xl font-black ${isInactive ? 'text-slate-400' : 'text-slate-900'}`}>₹{plan.price}</span>
-                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">/ {plan.duration} Days</span>
+                                        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">/ {plan.durationDays} Days</span>
                                     </div>
                                 </div>
 
@@ -179,16 +231,6 @@ const SubscriptionPlans = () => {
                                     {plan.features.length > 3 && <p className="text-[11px] text-slate-400 font-bold pl-8">+ {plan.features.length - 3} more luxury perks</p>}
                                 </div>
 
-                                <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Active Seats</p>
-                                        <p className="text-slate-800 font-black text-lg">{plan.subscribers}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Revenue Forecast</p>
-                                        <p className={`${style.text} font-black text-lg`}>₹{Math.floor((plan.subscribers * plan.price) / 1000)}k</p>
-                                    </div>
-                                </div>
                             </div>
                         );
                     })}
@@ -286,56 +328,58 @@ const SubscriptionPlans = () => {
 
             {/* ── Configuration Modal ── */}
             {isPlanModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 md:p-12">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsPlanModalOpen(false)} />
-                    <div className="relative bg-white rounded-[48px] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="relative bg-white rounded-[32px] w-full max-w-xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
                         {/* Modal Progress/Accent Line */}
-                        <div className={`h-2 bg-gradient-to-r ${planStyles[formData.color].accent.replace('bg-', 'from-').replace('500', '400')} to-indigo-600`} />
+                        <div className={`h-1.5 shrink-0 bg-gradient-to-r ${planStyles[formData.color].accent.replace('bg-', 'from-').replace('500', '400')} to-indigo-600 rounded-t-[32px]`} />
 
-                        <div className="p-10 border-b border-slate-50 flex items-center justify-between">
+                        {/* Header */}
+                        <div className="p-8 border-b border-slate-50 flex items-center justify-between shrink-0">
                             <div>
-                                <h2 className="text-3xl font-[1000] text-slate-900 tracking-tighter">{editingPlan ? 'Refine Package' : 'New Market Offering'}</h2>
-                                <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Subscription Engineering Parameters</p>
+                                <h2 className="text-2xl font-black text-slate-900 tracking-tight">{editingPlan ? 'Refine Package' : 'New Market Offering'}</h2>
+                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Subscription Engineering Parameters</p>
                             </div>
-                            <button onClick={() => setIsPlanModalOpen(false)} className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                            <button onClick={() => setIsPlanModalOpen(false)} className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
 
-                        <form onSubmit={handleSavePlan} className="p-10 space-y-8">
-                            <div className="space-y-6">
+                        {/* Scrollable Content */}
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            <form id="planForm" onSubmit={handleSavePlan} className="space-y-6">
                                 <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Offering Identity</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 px-1">Offering Identity</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-5 py-4.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-bold text-slate-800 placeholder:text-slate-300 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner"
+                                        className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-xl text-[13px] font-bold text-slate-800 placeholder:text-slate-300 focus:border-emerald-500 focus:bg-white outline-none transition-all"
                                         placeholder="e.g. Pro Construction Annual"
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Unit Pricing (₹)</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 px-1">Unit Pricing (₹)</label>
                                         <input
                                             type="number"
                                             required
                                             value={formData.price}
                                             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                            className="w-full px-5 py-4.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-bold text-slate-800 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner"
+                                            className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-xl text-[13px] font-bold text-slate-800 focus:border-emerald-500 focus:bg-white outline-none transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Identity Color</label>
-                                        <div className="flex gap-2.5 pt-1.5">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 px-1">Identity Color</label>
+                                        <div className="flex gap-2 pt-1">
                                             {['emerald', 'blue', 'indigo', 'amber'].map(color => (
                                                 <button
                                                     key={color}
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, color })}
-                                                    className={`w-10 h-10 rounded-full border-4 transition-all ${formData.color === color ? 'border-slate-800 scale-110 shadow-lg' : 'border-transparent hover:scale-105'} ${planStyles[color].accent}`}
+                                                    className={`w-8 h-8 rounded-full border-2 transition-all ${formData.color === color ? 'border-slate-800 scale-110 shadow-md' : 'border-transparent hover:scale-105'} ${planStyles[color].accent}`}
                                                 />
                                             ))}
                                         </div>
@@ -344,21 +388,21 @@ const SubscriptionPlans = () => {
 
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Validity (Days)</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 px-1">Validity (Days)</label>
                                         <input
                                             type="number"
                                             required
-                                            value={formData.duration}
-                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                                            className="w-full px-5 py-4.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-bold text-slate-800 focus:border-emerald-500 focus:outline-none focus:bg-white transition-all shadow-inner"
+                                            value={formData.durationDays}
+                                            onChange={(e) => setFormData({ ...formData, durationDays: e.target.value })}
+                                            className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-xl text-[13px] font-bold text-slate-800 focus:border-emerald-500 focus:outline-none focus:bg-white transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Cycle Tag</label>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 px-1">Cycle Tag</label>
                                         <select
                                             value={formData.tag}
                                             onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
-                                            className="w-full px-5 py-4.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-bold text-slate-800 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner cursor-pointer"
+                                            className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-xl text-[13px] font-bold text-slate-800 focus:border-emerald-500 focus:bg-white outline-none transition-all cursor-pointer"
                                         >
                                             <option value="Monthly">Monthly Cycle</option>
                                             <option value="Quarterly">Quarterly Cycle</option>
@@ -368,23 +412,34 @@ const SubscriptionPlans = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Feature Sets (Comma Separated)</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 px-1">Feature Sets (Comma Separated)</label>
                                     <textarea
                                         value={formData.features}
                                         onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                                        className="w-full px-5 py-5 bg-slate-50 border-2 border-slate-50 rounded-[32px] text-[14px] font-bold text-slate-800 min-h-[140px] focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none shadow-inner"
+                                        className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[13px] font-bold text-slate-800 min-h-[120px] focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none"
                                         placeholder="e.g. Premium ID, Verification Badge, Priority Leads..."
                                     />
                                 </div>
-                            </div>
+                            </form>
+                        </div>
 
+                        {/* Footer Actions */}
+                        <div className="p-6 border-t border-slate-50 bg-slate-50/30 flex items-center justify-end gap-4 shrink-0 px-8">
+                            <button
+                                type="button"
+                                onClick={() => setIsPlanModalOpen(false)}
+                                className="px-6 py-2.5 text-slate-400 hover:text-slate-600 text-[11px] font-black uppercase tracking-widest transition-colors"
+                            >
+                                Cancel
+                            </button>
                             <button
                                 type="submit"
-                                className="w-full py-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-[24px] font-black text-[13px] uppercase tracking-[0.3em] shadow-2xl shadow-slate-900/30 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all mt-4"
+                                form="planForm"
+                                className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all outline-none"
                             >
-                                {editingPlan ? 'Confirm Package Refinement' : 'Deploy Offering To Market'}
+                                {editingPlan ? 'Update Plan' : 'Create Entry'}
                             </button>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}

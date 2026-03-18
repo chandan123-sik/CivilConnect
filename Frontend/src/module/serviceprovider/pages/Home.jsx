@@ -1,44 +1,102 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getProviderProfile, getProviderDashboard, getIncomingLeads, toggleOnlineStatus, getReports } from '../../../api/providerApi';
+import axiosInstance from '../../../api/axiosInstance';
 
 const ProviderHome = () => {
-    const [isOnline, setIsOnline] = useState(true);
-    const [showNotifs, setShowNotifs] = useState(false);
     const navigate = useNavigate();
-    const providerName = localStorage.getItem('provider_name') || 'Ramesh Sharma';
-    const profileImg = localStorage.getItem('provider_profile_image');
-
-    // Notification Logic: Load real leads from localStorage
+    const [isOnline, setIsOnline] = useState(false);
+    const [showNotifs, setShowNotifs] = useState(false);
+    const [provider, setProvider] = useState(null);
+    const [dashboard, setDashboard] = useState({ totalLeads: 0, pendingLeads: 0, workersCount: 0 });
     const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [lastRead, setLastRead] = useState(localStorage.getItem('provider_notif_last_read') || '1970-01-01T00:00:00.000Z');
+    const [unreadCount, setUnreadCount] = useState(0);
 
-    React.useEffect(() => {
-        const loadLeads = () => {
+    const fetchData = async () => {
+        try {
+            const [prof, dash, leads] = await Promise.all([
+                getProviderProfile(),
+                getProviderDashboard(),
+                getIncomingLeads()
+            ]);
+            if (prof) {
+                setProvider(prof);
+                setIsOnline(prof.isOnline);
+
+                // Update localStorage with fresh subscription expiry to ensure navbar matches database
+                const localData = JSON.parse(localStorage.getItem('cc_provider_data') || '{}');
+                const updatedData = { ...localData, ...prof };
+                if (prof.subscriptionExpiry) updatedData.subscriptionExpiry = prof.subscriptionExpiry;
+                localStorage.setItem('cc_provider_data', JSON.stringify(updatedData));
+            }
+            if (dash) setDashboard(dash);
+            let notifArr = [];
+            if (leads && Array.isArray(leads)) {
+                notifArr = leads.filter(l => l.status === 'pending');
+            }
             try {
-                const savedLeads = JSON.parse(localStorage.getItem('cc_leads') || '[]');
-                // Filter for pending leads specifically for this provider (or global if not specific)
-                const pending = savedLeads.filter(l => l.status === 'pending');
-                setNotifications(pending);
-            } catch (err) {
-                console.error("Failed to load leads:", err);
-            }
-        };
+                const repRes = await getReports();
+                let reports = [];
+                if (Array.isArray(repRes)) {
+                    reports = repRes;
+                } else if (repRes?.data && Array.isArray(repRes.data)) {
+                    reports = repRes.data;
+                } else if (repRes?.data?.data && Array.isArray(repRes.data.data)) {
+                    reports = repRes.data.data;
+                }
 
-        loadLeads();
+                if (reports.length > 0) {
+                    const resolvedReps = reports
+                        .filter(r => r.status === 'Resolved' && r.reply)
+                        .map(r => ({
+                            _id: r._id,
+                            clientName: 'Support Team Reply',
+                            serviceType: r.reply,
+                            projectType: 'Report Response',
+                            budget: 'Support',
+                            createdAt: r.updatedAt,
+                            isReport: true
+                        }));
+                    notifArr = [...notifArr, ...resolvedReps].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+                }
+            } catch (e) { console.error('Error fetching reports for drawer', e); }
 
-        // Sync with storage events
-        const handleStorage = (e) => {
-            if (!e || !e.key || e.key === 'cc_leads') {
-                loadLeads();
-            }
-        };
-        window.addEventListener('storage', handleStorage);
-        const interval = setInterval(loadLeads, 5000); // Polling as backup
+            setNotifications(notifArr);
+            
+            // Calculate unread count
+            const currentLastRead = localStorage.getItem('provider_notif_last_read') || '1970-01-01T00:00:00.000Z';
+            const unread = notifArr.filter(n => new Date(n.createdAt) > new Date(currentLastRead)).length;
+            setUnreadCount(unread);
+        } catch (err) {
+            console.error("Failed to load provider dashboard:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        return () => {
-            window.removeEventListener('storage', handleStorage);
-            clearInterval(interval);
-        };
+    useEffect(() => {
+        fetchData();
+        // Setup simple dynamic interval to keep stats and leads completely real-time
+        const intervalId = setInterval(() => {
+            fetchData();
+        }, 8000); // 8-second refresh loop
+        
+        return () => clearInterval(intervalId);
     }, []);
+
+    const handleToggleStatus = async () => {
+        const newStatus = !isOnline;
+        try {
+            // Optimistically update
+            setIsOnline(newStatus);
+            await toggleOnlineStatus(newStatus);
+        } catch (err) {
+            setIsOnline(!newStatus); // Rollback on fail
+            alert("Failed to update status");
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-10">
@@ -48,17 +106,17 @@ const ProviderHome = () => {
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md overflow-hidden border border-white/20 shadow-sm flex items-center justify-center">
-                                {profileImg ? (
-                                    <img src={profileImg} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                {provider?.profileImage ? (
+                                    <img src={provider.profileImage} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                 ) : (
-                                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(providerName)}&background=ffffff&color=1E3A8A`} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(provider?.fullName || 'Provider')}&background=ffffff&color=1E3A8A`} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                 )}
                             </div>
                             <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-[#1E3A8A] rounded-full ${isOnline ? 'bg-green-400' : 'bg-slate-400'}`} />
                         </div>
                         <div>
                             <p className="text-blue-200/60 text-[11px] font-bold tracking-wider">Welcome,</p>
-                            <h1 className="text-white text-xl font-[1000] tracking-tight">{providerName}</h1>
+                            <h1 className="text-white text-xl font-[1000] tracking-tight">{provider?.fullName || 'Expert'}</h1>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 relative">
@@ -66,13 +124,21 @@ const ProviderHome = () => {
                             {isOnline ? 'Active' : 'Busy'}
                         </div>
                         <button
-                            onClick={() => setShowNotifs(!showNotifs)}
+                            onClick={() => {
+                                setShowNotifs(!showNotifs);
+                                if (!showNotifs) {
+                                    const now = new Date().toISOString();
+                                    setLastRead(now);
+                                    localStorage.setItem('provider_notif_last_read', now);
+                                    setUnreadCount(0);
+                                }
+                            }}
                             className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/10 text-white active:scale-90 transition-transform relative"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                            {notifications.length > 0 && (
+                            {unreadCount > 0 && (
                                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-[#1E3A8A] animate-bounce">
-                                    {notifications.length}
+                                    {unreadCount}
                                 </span>
                             )}
                         </button>
@@ -102,7 +168,7 @@ const ProviderHome = () => {
                                     animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
                                 }}>
                                     <div style={{ padding: '24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '1000', color: '#1E3A8A', letterSpacing: '0.8px', textTransform: 'uppercase' }}>RECENT LEADS</h4>
+                                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '1000', color: '#1E3A8A', letterSpacing: '0.8px', textTransform: 'uppercase' }}>NOTIFICATIONS</h4>
                                         <button
                                             onClick={() => setShowNotifs(false)}
                                             style={{ border: 'none', background: '#F8FAFC', width: '32px', height: '32px', borderRadius: '10px', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -117,27 +183,37 @@ const ProviderHome = () => {
                                                 <p style={{ fontSize: '11px', color: '#CBD5E1', mt: 4 }}>Stay online to catch new requests!</p>
                                             </div>
                                         ) : (
-                                            notifications.map((notif, idx) => (
+                                            notifications.map((notif, idx) => {
+                                                const clientName = notif.clientName || notif.userId?.fullName || 'New Client';
+                                                const serviceType = (notif.serviceType && notif.serviceType.toLowerCase() !== 'provider')
+                                                    ? notif.serviceType
+                                                    : notif.projectType || 'General Service';
+                                                return (
                                                 <div
-                                                    key={idx}
-                                                    onClick={() => { navigate('/serviceprovider/requests'); setShowNotifs(false); }}
+                                                    key={notif._id}
+                                                    onClick={() => { navigate(notif.isReport ? '/serviceprovider/profile' : '/serviceprovider/requests'); setShowNotifs(false); }}
                                                     style={{
-                                                        padding: '18px', borderRadius: '20px', background: '#F8FAFC',
-                                                        border: '1px solid #F1F5F9', position: 'relative', cursor: 'pointer',
+                                                        padding: '18px', borderRadius: '20px', background: notif.isReport ? '#F0F9FF' : '#F8FAFC',
+                                                        border: '1px solid', borderColor: notif.isReport ? '#E0F2FE' : '#F1F5F9', position: 'relative', cursor: 'pointer',
                                                         transition: 'all 0.2s ease'
                                                     }}
                                                 >
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                                        <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '900', color: '#1E3A8A' }}>{notif.client}</h5>
-                                                        <span style={{ fontSize: '10px', fontWeight: '900', color: '#6366F1', textTransform: 'uppercase' }}>{notif.date}</span>
+                                                        <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '900', color: '#1E3A8A' }}>{clientName}</h5>
+                                                        <span style={{ fontSize: '10px', fontWeight: '900', color: '#6366F1', textTransform: 'uppercase' }}>
+                                                            {new Date(notif.createdAt).toLocaleDateString()}
+                                                        </span>
                                                     </div>
-                                                    <p style={{ margin: '0 0 10px 0', fontSize: '12px', fontWeight: '600', color: '#64748B' }}>{notif.service}</p>
+                                                    <p style={{ margin: '0 0 10px 0', fontSize: '12px', fontWeight: '600', color: '#64748B' }}>{serviceType}</p>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <span style={{ fontSize: '12px', fontWeight: '1000', color: '#10B981' }}>{notif.price}</span>
-                                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6366F1', boxShadow: '0 0 8px rgba(99, 102, 241, 0.4)' }} />
+                                                        <span style={{ fontSize: '12px', fontWeight: '1000', color: notif.isReport ? '#0369A1' : '#10B981' }}>
+                                                            {notif.isReport ? 'SUPPORT RESOLVED' : (notif.budget && notif.budget !== 'Negotiable' ? `₹${notif.budget}` : notif.budget || 'Negotiable')}
+                                                        </span>
+                                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: notif.isReport ? '#0369A1' : '#6366F1', boxShadow: `0 0 8px ${notif.isReport ? 'rgba(3, 105, 161, 0.4)' : 'rgba(99, 102, 241, 0.4)'}` }} />
                                                     </div>
                                                 </div>
-                                            ))
+                                                );
+                                            })
                                         )}
                                     </div>
 
@@ -152,7 +228,7 @@ const ProviderHome = () => {
                                                 letterSpacing: '1px'
                                             }}
                                         >
-                                            VIEW ALL LEADS
+                                            VIEW ALL ACTIVITY
                                         </button>
                                     </div>
                                 </div>
@@ -172,7 +248,7 @@ const ProviderHome = () => {
                             <h2 className="text-white text-lg font-bold tracking-tight">{isOnline ? 'Accepting new leads' : 'Currently working/busy'}</h2>
                         </div>
                         <button
-                            onClick={() => setIsOnline(!isOnline)}
+                            onClick={handleToggleStatus}
                             className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none p-1 ${isOnline ? 'bg-blue-400' : 'bg-white/10'}`}
                         >
                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition duration-300 shadow-md ${isOnline ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -188,7 +264,7 @@ const ProviderHome = () => {
                         </div>
                         <div>
                             <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-0.5">Total Requests</p>
-                            <p className="text-xl font-[1000] text-slate-900 leading-none">42</p>
+                            <p className="text-xl font-[1000] text-slate-900 leading-none">{dashboard.totalLeads}</p>
                         </div>
                     </div>
                     <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between h-28 active:scale-95 transition-transform hover:shadow-md cursor-pointer">
@@ -197,7 +273,7 @@ const ProviderHome = () => {
                         </div>
                         <div>
                             <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-0.5">Pending Leads</p>
-                            <p className="text-xl font-[1000] text-slate-900 leading-none">03</p>
+                            <p className="text-xl font-[1000] text-slate-900 leading-none">{dashboard.pendingLeads}</p>
                         </div>
                     </div>
                 </div>
@@ -235,18 +311,26 @@ const ProviderHome = () => {
                     </div>
 
                     <div className="space-y-3">
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-50 flex items-center justify-between active:scale-[0.98] transition-all hover:shadow-md cursor-pointer">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shadow-inner">
-                                    <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        {loading ? (
+                            <div className="text-center py-4 text-slate-400 text-[10px] font-black uppercase">Loading activity...</div>
+                        ) : notifications.length === 0 ? (
+                            <div className="text-center py-4 text-slate-400 text-[10px] font-black uppercase text-center">No recent activity</div>
+                        ) : (
+                            notifications.slice(0, 3).map(notif => (
+                                <div key={notif._id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-50 flex items-center justify-between active:scale-[0.98] transition-all hover:shadow-md cursor-pointer">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shadow-inner">
+                                            <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-slate-900 font-extrabold text-[15px]">{notif.clientName}</h4>
+                                            <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">{notif.serviceType} • {new Date(notif.createdAt).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <span className="bg-amber-50 text-amber-600 text-[9px] font-black px-3 py-1 rounded-full border border-amber-100 uppercase tracking-widest shadow-sm">New</span>
                                 </div>
-                                <div>
-                                    <h4 className="text-slate-900 font-extrabold text-[15px]">Amit Patel</h4>
-                                    <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">Wall Painting • 2h ago</p>
-                                </div>
-                            </div>
-                            <span className="bg-amber-50 text-amber-600 text-[9px] font-black px-3 py-1 rounded-full border border-amber-100 uppercase tracking-widest shadow-sm">New</span>
-                        </div>
+                            ))
+                        )}
                     </div>
                 </div>
 

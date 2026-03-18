@@ -1,16 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Keypad from './components/Keypad';
+import { sendOTP } from '../api/authApi';
+import { showToast } from '../components/Toast';
 
 const MobileInput = () => {
     const navigate = useNavigate();
     const [mobile, setMobile] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handlePress = (num) => {
         if (mobile.length < 10) setMobile(prev => prev + num);
     };
     const handleDelete = () => setMobile(prev => prev.slice(0, -1));
     const isReady = mobile.length === 10;
+
+    const handleContinue = async () => {
+        if (!isReady || loading) return;
+        setLoading(true);
+        try {
+            await sendOTP(mobile);
+            navigate('/auth/otp-verify', { state: { mobile } });
+        } catch (err) {
+            showToast(err || "Failed to send OTP", 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div style={{ height: '100dvh', background: '#F8F9FD', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -104,9 +120,10 @@ const MobileInput = () => {
                         </div>
                     </div>
                     <button
-                        onClick={() => isReady && navigate('/auth/otp-verify', { state: { mobile } })}
+                        onClick={handleContinue}
+                        disabled={!isReady || loading}
                         style={{
-                            background: isReady ? '#7C3AED' : '#F3F4F6',
+                            background: isReady ? (loading ? '#9CA3AF' : '#7C3AED') : '#F3F4F6',
                             color: isReady ? '#fff' : '#9CA3AF',
                             border: 'none',
                             borderRadius: '20px',
@@ -118,7 +135,7 @@ const MobileInput = () => {
                             transition: 'all 0.3s'
                         }}
                     >
-                        Continue
+                        {loading ? '...' : 'Continue'}
                     </button>
                 </div>
             </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Keypad from './components/Keypad';
+import { verifyOTP } from '../api/authApi';
+import { showToast } from '../components/Toast';
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 37;
@@ -12,6 +14,7 @@ const OTPVerification = () => {
 
     const [otp, setOtp] = useState('');
     const [timer, setTimer] = useState(RESEND_SECONDS);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (timer <= 0) return;
@@ -32,11 +35,44 @@ const OTPVerification = () => {
 
     const isReady = otp.length === OTP_LENGTH;
 
-    const handleEnter = () => {
-        if (!isReady) return;
-        localStorage.setItem('access_token', 'temp_verified_token');
-        localStorage.setItem('user_phone', mobile);
-        navigate('/auth/role-selection');
+    const handleEnter = async () => {
+        if (!isReady || loading) return;
+        setLoading(true);
+        try {
+            const res = await verifyOTP(mobile, otp);
+            
+            if (res.isNew) {
+                // New user flow - we don't know the role yet, so using temporary cc_temp_token
+                localStorage.setItem('cc_user_phone', mobile);
+                if (res.token) localStorage.setItem('cc_temp_token', res.token);
+                navigate('/auth/role-selection');
+            } else {
+                // Existing user - store in role-specific key
+                if (res.role === 'provider') {
+                    localStorage.setItem('cc_provider_token', res.token);
+                    localStorage.setItem('cc_provider_data', JSON.stringify(res.user));
+                } else if (res.role === 'admin') {
+                    localStorage.setItem('cc_admin_token', res.token);
+                    localStorage.setItem('cc_admin_data', JSON.stringify(res.user));
+                } else {
+                    localStorage.setItem('cc_user_token', res.token);
+                    localStorage.setItem('cc_user_data', JSON.stringify(res.user));
+                }
+
+                localStorage.setItem('cc_current_role', res.role);
+                localStorage.removeItem('cc_temp_token'); // Cleanup temp token if it exists
+                
+                // Route based on role
+                if (res.role === 'admin') navigate('/admin/dashboard/home');
+                else if (res.role === 'provider') navigate('/serviceprovider/home');
+                else navigate('/user/home');
+            }
+        } catch (err) {
+            showToast(err || "Invalid OTP", 'error');
+            setOtp(''); // Clear if failed
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -103,9 +139,10 @@ const OTPVerification = () => {
                 {/* Main Button */}
                 <button
                     onClick={handleEnter}
+                    disabled={!isReady || loading}
                     style={{
                         width: '100%',
-                        background: isReady ? '#7C3AED' : '#F3F4F6',
+                        background: isReady ? (loading ? '#9CA3AF' : '#7C3AED') : '#F3F4F6',
                         color: isReady ? '#fff' : '#9CA3AF',
                         border: 'none',
                         borderRadius: '20px',
@@ -117,7 +154,7 @@ const OTPVerification = () => {
                         marginBottom: '4px'
                     }}
                 >
-                    Verify and Continue
+                    {loading ? 'Verifying...' : 'Verify and Continue'}
                 </button>
             </div>
 

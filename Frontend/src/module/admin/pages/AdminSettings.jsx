@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getCMSSettings, updateCMSSettings, getFeedbacks, clearFeedbacks } from '../../../api/adminApi';
 
 const AdminSettings = () => {
     const [formData, setFormData] = useState({
@@ -12,49 +13,175 @@ const AdminSettings = () => {
     const [isDisputeOpen, setIsDisputeOpen] = useState(false);
 
     // Initial Draft for CMS
-    const [cmsDraft, setCmsDraft] = useState(() => {
-        const saved = localStorage.getItem('cc_dynamic_cms');
-        return saved ? JSON.parse(saved) : {
-            policyPoints: [
-                { id: 1, title: 'Data Collection', desc: 'CivilConnect collects information to facilitate connections between clients and civil engineering experts.' },
-                { id: 2, title: 'Verified Experts', desc: 'All service providers undergo a verification process. We share your request details with selected experts.' },
-                { id: 3, title: 'Secure Communication', desc: 'Your contact details are protected. Direct messaging is used only for project-related coordination.' },
-                { id: 4, title: 'Payment Reference', desc: 'Pricing shown in materials and services are reference rates and subject to market fluctuations.' }
-            ],
-            ratingTitle: 'Enjoying CivilConnect?',
-            ratingDesc: 'Your feedback helps us provide better experts.'
-        };
+    const [cmsDraft, setCmsDraft] = useState({
+        policyPoints: [
+            { id: 1, title: 'Data Collection', desc: 'CivilConnect collects information to facilitate connections between clients and civil engineering experts.' },
+            { id: 2, title: 'Verified Experts', desc: 'All service providers undergo a verification process. We share your request details with selected experts.' },
+            { id: 3, title: 'Secure Communication', desc: 'Your contact details are protected. Direct messaging is used only for project-related coordination.' },
+            { id: 4, title: 'Payment Reference', desc: 'Pricing shown in materials and services are reference rates and subject to market fluctuations.' }
+        ],
+        ratingTitle: 'Enjoying CivilConnect?',
+        ratingDesc: 'Your feedback helps us provide better experts.'
     });
 
-    const [appRatings, setAppRatings] = useState(() => {
-        const saved = localStorage.getItem('cc_app_ratings');
-        return saved ? JSON.parse(saved) : [
-            { id: 1, name: 'Amit Verma', role: 'User', stars: 5, time: '2 mins ago' },
-            { id: 2, name: 'Suresh Carpentry', role: 'Provider', stars: 4, time: '1 hour ago' },
-            { id: 3, name: 'Neha Gupta', role: 'User', stars: 5, time: 'Yesterday' }
-        ];
-    });
+    const [appRatings, setAppRatings] = useState([]);
 
-    const [showAllRatings, setShowAllRatings] = useState(false);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [ratingFilter, setRatingFilter] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (isDisputeOpen) {
+            loadDisputeData();
+        }
+    }, [isDisputeOpen]);
+
+    const loadDisputeData = async () => {
+        try {
+            const [cms, ratings] = await Promise.all([getCMSSettings(), getFeedbacks()]);
+            if (cms) setCmsDraft(cms);
+            setAppRatings(ratings);
+        } catch (err) {
+            console.error("Failed to load dispute center data:", err);
+        }
+    };
 
     const handleInput = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmitCMS = () => {
+    const handleSubmitCMS = async () => {
         setIsSaving(true);
-        setTimeout(() => {
-            localStorage.setItem('cc_dynamic_cms', JSON.stringify(cmsDraft));
-            setIsSaving(false);
+        try {
+            await updateCMSSettings(cmsDraft);
             alert('Content successfully pushed to all panels! 🚀');
-        }, 800);
+        } catch (err) {
+            alert('Failed to update content');
+        } finally {
+            setIsSaving(false);
+        }
     };
+
+    const handleClearHistory = async () => {
+        if (window.confirm('Clear all logs?')) {
+            try {
+                await clearFeedbacks();
+                setAppRatings([]);
+            } catch (err) {
+                alert("Failed to clear history");
+            }
+        }
+    };
+
+    const filteredRatings = ratingFilter 
+        ? appRatings.filter(r => r.stars === ratingFilter)
+        : appRatings;
 
     // --- VIEW 1: DISPUTE CENTER ---
     if (isDisputeOpen) {
         return (
-            <div className="max-w-6xl mx-auto animate-in fade-in duration-500 pb-20">
+            <div className="max-w-6xl mx-auto animate-in fade-in duration-500 pb-20 relative">
+                {/* ── Feedback Side Drawer ── */}
+                {isDrawerOpen && (
+                    <div className="fixed inset-0 z-[100] flex justify-end">
+                        {/* Backdrop */}
+                        <div 
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
+                            onClick={() => setIsDrawerOpen(false)}
+                        />
+                        
+                        {/* Drawer Content */}
+                        <div className="relative w-full max-w-md bg-white h-full shadow-2xl border-l border-slate-100 flex flex-col animate-in slide-in-from-right duration-500 ease-out">
+                            {/* Header */}
+                            <div className="p-8 border-b border-slate-100 flex items-center justify-between shrink-0">
+                                <div>
+                                    <h2 className="text-2xl font-[1000] text-slate-900 tracking-tighter">Feedback Logs</h2>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Total {appRatings.length} entries</p>
+                                </div>
+                                <button 
+                                    onClick={() => setIsDrawerOpen(false)}
+                                    className="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all active:scale-95"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Filters Bar */}
+                            <div className="px-8 py-6 bg-slate-50/50 border-b border-slate-100 shrink-0">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 block">Filter by Stars</label>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => setRatingFilter(null)}
+                                        className={`flex-1 py-2.5 rounded-xl text-[11px] font-[1000] uppercase tracking-tighter transition-all border ${!ratingFilter ? 'bg-green-600 border-green-600 text-white shadow-lg shadow-green-500/20' : 'bg-white border-slate-200 text-slate-400 hover:border-green-300'}`}
+                                    >
+                                        All
+                                    </button>
+                                    {[1, 2, 3, 4, 5].map(num => (
+                                        <button 
+                                            key={num}
+                                            onClick={() => setRatingFilter(num)}
+                                            className={`w-12 py-2.5 rounded-xl text-[11px] font-[1000] transition-all border flex items-center justify-center gap-1 ${ratingFilter === num ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20' : 'bg-white border-slate-200 text-slate-400 hover:border-amber-300'}`}
+                                        >
+                                            {num}★
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Logs List */}
+                            <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
+                                {filteredRatings.length > 0 ? (
+                                    filteredRatings.map((r, idx) => (
+                                        <div 
+                                            key={idx} 
+                                            className="p-5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-green-100 transition-all group animate-in slide-in-from-bottom-4 duration-500"
+                                            style={{ animationDelay: `${idx * 50}ms` }}
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-[10px] ${r.role === 'User' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
+                                                        {r.name.charAt(0)}
+                                                    </div>
+                                                    <span className="text-slate-900 font-black text-sm">{r.name}</span>
+                                                </div>
+                                                <span className={`text-[8px] font-black px-2 py-0.5 rounded-md border uppercase tracking-wider ${r.role === 'User' ? 'bg-blue-50 text-blue-500 border-blue-100' : 'bg-green-50 text-green-500 border-green-100'}`}>
+                                                    {r.role}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex text-amber-500 text-xs">
+                                                    {'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)}
+                                                </div>
+                                                <span className="text-slate-400 text-[10px] font-bold">{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Today'}</span>
+                                            </div>
+                                            {r.comment && (
+                                                <p className="mt-3 text-[12px] text-slate-500 font-medium leading-relaxed bg-slate-50/50 p-3 rounded-lg border border-slate-100 italic">
+                                                    "{r.comment}"
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center opacity-30">
+                                        <div className="text-5xl mb-4">🔍</div>
+                                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-center">No logs found for this filter</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer */}
+                            <div className="p-8 border-t border-slate-100 shrink-0">
+                                <button
+                                    onClick={handleClearHistory}
+                                    className="w-full py-4 bg-red-50 text-red-500 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-sm"
+                                >
+                                    Destroy All Logs
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between mb-12">
                     <div className="flex items-center gap-6">
                         <button
@@ -126,23 +253,22 @@ const AdminSettings = () => {
 
                     {/* App Rating Tracker */}
                     <div className="col-span-4 space-y-8">
-                        <div className="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm">
+                        <div className="bg-white rounded-[32px] p-8 border border-slate-200 shadow-sm h-fit">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-slate-900 font-[1000] text-xl">Feedback Tracker</h3>
-                                {appRatings.length > 3 && (
-                                    <button
-                                        onClick={() => setShowAllRatings(!showAllRatings)}
-                                        className="text-green-600 font-black text-[10px] uppercase tracking-widest hover:underline active:scale-95 transition-all"
-                                    >
-                                        {showAllRatings ? 'Show Less' : `View All (${appRatings.length})`}
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => setIsDrawerOpen(true)}
+                                    className="text-green-600 font-black text-[10px] uppercase tracking-widest hover:underline active:scale-95 transition-all flex items-center gap-1"
+                                >
+                                    View All
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                                </button>
                             </div>
 
-                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-4">
                                 {appRatings.length > 0 ? (
-                                    (showAllRatings ? appRatings : appRatings.slice(0, 3)).map((r, idx) => (
-                                        <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-2 transition-all hover:border-green-100 hover:shadow-md animate-in slide-in-from-right duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
+                                    appRatings.slice(0, 3).map((r, idx) => (
+                                        <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-2 transition-all hover:border-green-100 hover:shadow-md">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-slate-900 font-black text-[13px] tracking-tight">{r.name}</span>
                                                 <span className={`text-[9px] font-[1000] uppercase px-2.5 py-1 rounded-full border ${r.role === 'User' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
@@ -153,7 +279,7 @@ const AdminSettings = () => {
                                                 <div className="text-amber-500 text-sm drop-shadow-sm">
                                                     {'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)}
                                                 </div>
-                                                <span className="text-slate-400 text-[10px] font-black">{r.time || 'Just now'}</span>
+                                                <span className="text-slate-400 text-[10px] font-black">{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Just now'}</span>
                                             </div>
                                         </div>
                                     ))
@@ -167,7 +293,7 @@ const AdminSettings = () => {
 
 
                             <button
-                                onClick={() => { if (window.confirm('Clear all logs?')) { localStorage.removeItem('cc_app_ratings'); setAppRatings([]); } }}
+                                onClick={handleClearHistory}
                                 className="w-full mt-6 py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-colors opacity-40 hover:opacity-100"
                             >
                                 Clear History

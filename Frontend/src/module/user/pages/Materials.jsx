@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
-import { mockMaterials } from '../mockData';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
+import { getMaterials } from '../../../api/publicApi';
+import { createOrder, getOrders } from '../../../api/userApi';
+import { ShoppingBag, Search, Filter, CheckCircle, Package, Clock, ChevronRight, X } from 'lucide-react';
 
 const MaterialCategories = ['All', 'Basic', 'Steel', 'Masonry', 'Flooring', 'Plumbing', 'Electrical', 'Finishing', 'Wood'];
 
@@ -11,86 +14,92 @@ const initialMaterials = [
 ];
 
 const Materials = () => {
-    const [viewMode, setViewMode] = useState('store'); // 'store' or 'orders'
+    const location = useLocation();
+    const [viewMode, setViewMode] = useState('store'); 
     const [search, setSearch] = useState('');
     const [activeCat, setActiveCat] = useState('All');
     const [selectedMaterial, setSelectedMaterial] = useState(null);
     const [bookingData, setBookingData] = useState({ brand: '', quantity: 1 });
     const [showSuccess, setShowSuccess] = useState(false);
-    const [showUserNotifs, setShowUserNotifs] = useState(false);
-
-    // My Orders history logic
+    const [catalog, setCatalog] = useState([]);
     const [myOrders, setMyOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [bookingLoading, setBookingLoading] = useState(false);
 
-    const loadOrders = () => {
-        const orders = JSON.parse(localStorage.getItem('cc_material_orders') || '[]');
-        const currentUserId = localStorage.getItem('user_id') || 'USER-001';
-        setMyOrders(orders.filter(o => o.userId === currentUserId));
-    };
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('view') === 'orders') {
+            setViewMode('orders');
+        }
+    }, [location]);
 
-    // Dynamic catalog from Admin
-    const [catalog, setCatalog] = useState(() => {
-        const saved = localStorage.getItem('cc_materials_catalog');
-        return saved ? JSON.parse(saved) : initialMaterials;
-    });
+    useEffect(() => {
+        loadData();
+    }, [viewMode]);
 
-    // Listen for storage changes
-    React.useEffect(() => {
-        loadOrders();
-        const handleStorage = (e) => {
-            if (!e || !e.key || e.key === 'cc_materials_catalog' || e.key === 'cc_material_orders') {
-                const refreshedCat = localStorage.getItem('cc_materials_catalog');
-                if (refreshedCat) setCatalog(JSON.parse(refreshedCat));
-                loadOrders();
-            }
+    useEffect(() => {
+        if (selectedMaterial) {
+            document.body.style.overflow = 'hidden';
+            if (window.lenis) window.lenis.stop();
+        } else {
+            document.body.style.overflow = 'unset';
+            if (window.lenis) window.lenis.start();
+        }
+        return () => { 
+            document.body.style.overflow = 'unset'; 
+            if (window.lenis) window.lenis.start();
         };
-        window.addEventListener('storage', handleStorage);
-        return () => window.removeEventListener('storage', handleStorage);
-    }, []);
+    }, [selectedMaterial]);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            if (viewMode === 'store') {
+                const data = await getMaterials();
+                setCatalog(data);
+            } else {
+                const data = await getOrders();
+                setMyOrders(data);
+            }
+        } catch (err) {
+            console.error("Failed to load materials data:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Removed hardcoded brand logic (Now using dynamic catalog)
 
     // User notifications (Accepted/Rejected orders)
     const userNotifications = React.useMemo(() => {
-        const orders = JSON.parse(localStorage.getItem('cc_material_orders') || '[]');
-        return orders.filter(o => o.userId === (localStorage.getItem('user_id') || 'USER-001') && o.status !== 'pending');
-    }, [showUserNotifs, showSuccess]);
+        return myOrders.filter(o => o.status !== 'pending');
+    }, [myOrders]);
 
-    const handleBooking = () => {
+    const handleBooking = async () => {
         if (!bookingData.brand) {
             alert('Please select a brand first');
             return;
         }
 
+        setBookingLoading(true);
         try {
-            const newOrder = {
-                id: `ORD-${Date.now()}`,
-                userId: localStorage.getItem('user_id') || 'USER-001',
-                userName: localStorage.getItem('user_name') || 'Guest User',
-                userAddress: `${localStorage.getItem('user_city') || 'N/A'}, ${localStorage.getItem('user_area') || ''}`,
-                userPhone: localStorage.getItem('user_phone') || 'N/A',
+            const orderPayload = {
+                materialId: selectedMaterial._id,
                 materialName: selectedMaterial.name,
                 brand: bookingData.brand.name,
-                quantity: bookingData.quantity,
                 unit: selectedMaterial.unit,
-                pricePerUnit: bookingData.brand.price,
-                totalPrice: (bookingData.brand.price || 0) * bookingData.quantity,
-                status: 'pending',
-                createdAt: new Date().toISOString(),
-                deliveryTime: null
+                quantity: bookingData.quantity,
+                totalPrice: (bookingData.brand.price || 0) * bookingData.quantity
             };
 
-            const existingOrders = JSON.parse(localStorage.getItem('cc_material_orders') || '[]');
-            localStorage.setItem('cc_material_orders', JSON.stringify([newOrder, ...existingOrders]));
-
+            await createOrder(orderPayload);
             setShowSuccess(true);
-            loadOrders(); // Immediate refresh local state
-
-            // Dispatch custom storage event for same-window updates
-            window.dispatchEvent(new Event('storage'));
+            setSelectedMaterial(null);
         } catch (err) {
             console.error("Booking failed:", err);
-            alert("Ordering failed, please try again.");
+            alert(err || "Ordering failed, please try again.");
+        } finally {
+            setBookingLoading(false);
         }
     };
 
@@ -162,98 +171,6 @@ const Materials = () => {
                             >
                                 Orders
                             </button>
-                        </div>
-
-                        {/* Compact Notification Bell */}
-                        <div style={{ position: 'relative' }}>
-                            <button
-                                onClick={() => setShowUserNotifs(!showUserNotifs)}
-                                style={{
-                                    width: '34px', height: '34px', borderRadius: '12px',
-                                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                    transition: 'all 0.2s', position: 'relative', backdropFilter: 'blur(10px)'
-                                }}
-                            >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" /></svg>
-                                {userNotifications.length > 0 && <span style={{ position: 'absolute', top: '7px', right: '7px', width: '7px', height: '7px', background: '#EF4444', borderRadius: '50%', border: '1.5px solid #7C3AED' }} />}
-                            </button>
-
-                            {/* Premium Side Drawer Notifications */}
-                            {showUserNotifs && (
-                                <>
-                                    {/* Backdrop */}
-                                    <div
-                                        onClick={() => setShowUserNotifs(false)}
-                                        style={{
-                                            position: 'fixed', inset: 0,
-                                            background: 'rgba(0,0,0,0.3)',
-                                            backdropFilter: 'blur(4px)',
-                                            zIndex: 2000,
-                                            animation: 'fadeIn 0.3s ease'
-                                        }}
-                                    />
-                                    {/* Drawer */}
-                                    <div style={{
-                                        position: 'fixed', top: 0, right: 0,
-                                        width: '85%', maxWidth: '340px', height: '100vh',
-                                        background: '#fff',
-                                        boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
-                                        zIndex: 3000,
-                                        display: 'flex', flexDirection: 'column',
-                                        animation: 'slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-                                    }}>
-                                        <div style={{ padding: '24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '900', color: '#111827', letterSpacing: '0.5px' }}>NOTIFICATIONS</h4>
-                                            <button
-                                                onClick={() => setShowUserNotifs(false)}
-                                                style={{ border: 'none', background: '#F8FAFC', width: '32px', height: '32px', borderRadius: '10px', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                            >✕</button>
-                                        </div>
-
-                                        <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                            {userNotifications.length === 0 ? (
-                                                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                                                    <div style={{ fontSize: '40px', marginBottom: 16 }}>🔔</div>
-                                                    <p style={{ fontSize: '14px', color: '#94A3B8', fontWeight: '500' }}>No notifications yet.</p>
-                                                </div>
-                                            ) : (
-                                                userNotifications.map(notif => (
-                                                    <div key={notif.id} style={{ padding: '16px', borderRadius: '20px', background: notif.status === 'accepted' ? '#F0FDF4' : '#FEF2F2', border: '1px solid', borderColor: notif.status === 'accepted' ? '#DCFCE7' : '#FEE2E2', position: 'relative' }}>
-                                                        <div style={{ display: 'flex', gap: 12 }}>
-                                                            <div style={{
-                                                                width: '10px', height: '10px', borderRadius: '50%',
-                                                                background: notif.status === 'accepted' ? '#10B981' : '#EF4444',
-                                                                marginTop: '4px'
-                                                            }} />
-                                                            <div>
-                                                                <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '800', color: notif.status === 'accepted' ? '#166534' : '#991B1B' }}>
-                                                                    {notif.status === 'accepted' ? 'Order Confirmed' : 'Order Rejected'}
-                                                                </p>
-                                                                <p style={{ margin: 0, fontSize: '11px', fontWeight: '600', color: notif.status === 'accepted' ? '#15803D' : '#B91C1C', lineHeight: 1.5 }}>
-                                                                    {notif.brand}: {notif.status === 'accepted' ? `Your material is arriving in ${notif.deliveryTime}.` : 'The order was declined by admin.'}
-                                                                </p>
-                                                                <p style={{ margin: '8px 0 0', fontSize: '9px', fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase' }}>
-                                                                    {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-
-                                        <div style={{ padding: '20px', background: '#F8FAFC', borderTop: '1px solid #F1F5F9' }}>
-                                            <button
-                                                onClick={() => { setShowUserNotifs(false); setViewMode('orders'); }}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', color: '#fff', fontSize: '13px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 12px rgba(124, 58, 237, 0.2)' }}
-                                            >
-                                                VIEW ALL ORDERS
-                                            </button>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -359,7 +276,7 @@ const Materials = () => {
                         gap: '12px'
                     }}>
                         {filtered.map(m => (
-                            <div key={m.id} style={{
+                            <div key={m._id || m.id} style={{
                                 background: '#fff',
                                 borderRadius: '16px',
                                 overflow: 'hidden',
@@ -367,15 +284,15 @@ const Materials = () => {
                                 border: '1px solid #F3F4F6',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                height: '240px',
                                 cursor: 'pointer',
-                                transition: 'transform 0.2s'
+                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                alignSelf: 'start' // Prevent stretching in grid
                             }}
                                 onClick={() => setSelectedMaterial(m)}
                                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
                                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                             >
-                                <div style={{ height: '110px', width: '100%', overflow: 'hidden', position: 'relative', background: '#F3F4F6' }}>
+                                <div style={{ height: '100px', width: '100%', overflow: 'hidden', position: 'relative', background: '#F3F4F6' }}>
                                     <img
                                         src={m.image}
                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -385,27 +302,20 @@ const Materials = () => {
                                     />
                                     <div style={{
                                         position: 'absolute', top: '8px', right: '8px',
-                                        background: 'rgba(255,255,255,0.9)', padding: '4px 8px', borderRadius: '6px',
-                                        fontSize: '10px', fontWeight: '800', color: '#7C3AED', backdropFilter: 'blur(4px)'
+                                        background: 'rgba(255,255,255,0.9)', padding: '4px 7px', borderRadius: '6px',
+                                        fontSize: '9px', fontWeight: '900', color: '#7C3AED', backdropFilter: 'blur(4px)',
+                                        textTransform: 'uppercase'
                                     }}>
                                         {m.category}
                                     </div>
                                 </div>
-                                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
-                                    <div>
-                                        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '800', color: '#111827', margin: '0 0 6px 0', lineHeight: 1.4, height: '42px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                            {m.name}
-                                        </h3>
-                                    </div>
-                                    <div style={{ paddingTop: 8, borderTop: '1px solid #F9FAFB' }}>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '900', color: '#7C3AED' }}>
-                                                {m.price}
-                                            </span>
-                                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#64748B', fontWeight: '600' }}>
-                                                {m.unit}
-                                            </span>
-                                        </div>
+                                <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '800', color: '#111827', margin: 0, lineHeight: 1.2, minHeight: '34px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                        {m.name}
+                                    </h3>
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '2px' }}>
+                                        <span style={{ fontSize: '15px', fontWeight: '1000', color: '#7C3AED' }}>₹{m.price}</span>
+                                        <span style={{ fontSize: '10px', color: '#64748B', fontWeight: '700', textTransform: 'lowercase' }}>{m.unit}</span>
                                     </div>
                                 </div>
                             </div>

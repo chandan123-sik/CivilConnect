@@ -1,0 +1,56 @@
+﻿[dotenv@17.3.1] injecting env (8) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+[1m[34m--- ≡ƒÜÇ STARTING FINAL MASTER API TESTING (76 ENDPOINTS) ---[0m
+
+[32mΓ£à Connected to Database[0m
+[32mΓ£à Auth Tokens Generated (User, Provider, Admin)[0m
+
+[35m[1/7] Testing Public APIs...[0m
+   [32mΓ£ö GET Categories (200)
+   [32mΓ£ö GET Providers List (200)
+   [32mΓ£ö GET Provider Profile (200)
+   [32mΓ£ö GET Materials List (200)
+   [32mΓ£ö GET Home Banners (200)
+   [32mΓ£ö GET Subscription Plans (200)
+   [32mΓ£ö GET Privacy Policy (200)
+   [32mΓ£ö GET Home Unified Data (200)
+
+[35m[2/7] Testing Auth APIs...[0m
+   [32mΓ£ö POST Send OTP (200)
+
+[35m[3/7] Testing User APIs...[0m
+   [32mΓ£ö GET User Profile (200)
+   [32mΓ£ö GET User Orders (200)
+   [32mΓ£ö GET Hiring History (200)
+   [32mΓ£ö GET Support Reports (200)
+
+[35m[4/7] Testing Provider APIs...[0m
+   [32mΓ£ö GET My Profile (200)
+   [31mΓ£ÿ GET Dashboard Stats (403)
+   [31mΓ£ÿ GET Workers List (403)
+   [31mΓ£ÿ GET My Reports (403)
+
+[35m[5/7] Testing Leads & Orders Flow...[0m
+   [32mΓ£ö GET Lead Index (200)
+   [32mΓ£ö GET Orders Index (200)
+
+[35m[6/7] Testing Admin Management APIs...[0m
+   [32mΓ£ö GET Admin Dashboard Stats (200)
+   [32mΓ£ö GET Admin Revenue Insights (200)
+   [32mΓ£ö GET Admin Platform Health (200)
+   [32mΓ£ö GET Admin Pending Approvals (200)
+   [32mΓ£ö GET Admin User Management (200)
+   [32mΓ£ö GET Admin Provider Management (200)
+   [32mΓ£ö GET Admin Global Leads List (200)
+   [32mΓ£ö GET Admin Subscription Plans (200)
+   [32mΓ£ö GET Admin Banner Management (200)
+   [32mΓ£ö GET Admin Order Processing (200)
+   [32mΓ£ö GET Admin User Feedback (200)
+   [32mΓ£ö GET Admin Support Tickets (200)
+   [32mΓ£ö GET Admin Admin Alerts (200)
+
+[1m[34m--- ≡ƒÅü TESTING SUMMARY ---[0m
+[32mPASSED: 29[0m
+[31mFAILED: 3[0m
+[1mSTRETCH TOTAL: 32 Endpoints Stimulated[0m
+
+[33mΓÜá WARNING: Some endpoints returned errors. Check if server is running or if database has required test data.[0m

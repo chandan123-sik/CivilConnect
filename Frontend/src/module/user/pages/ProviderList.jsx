@@ -1,76 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { mockProviders, mockCategories } from '../mockData';
+import { getProviders, getCategories } from '../../../api/publicApi';
 
 const ProviderList = () => {
     const { categoryId } = useParams();
     const navigate = useNavigate();
 
-    // Read category from localStorage (admin-managed), fallback to mockData
-    const category = React.useMemo(() => {
-        const saved = localStorage.getItem('cc_admin_categories');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.length > 0 && parsed[0]?.id?.startsWith('cat-')) {
-                localStorage.removeItem('cc_admin_categories');
-                return mockCategories.find(c => c.id === categoryId);
-            }
-            const found = parsed.find(c => c.id === categoryId);
-            if (found) return {
-                ...found,
-                subCategories: (found.subCategories || []).map((s, i) => ({ id: `sub-${i}`, label: s }))
-            };
-        }
-        return mockCategories.find(c => c.id === categoryId);
-    }, [categoryId]);
-
+    const [category, setCategory] = useState(null);
+    const [providers, setProviders] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [subCategoryId, setSubCategoryId] = useState('all');
-    // Default to 'All Cities' so providers always show initially
     const [selectedCity, setSelectedCity] = useState('All Cities');
     const [showCitySheet, setShowCitySheet] = useState(false);
     const [showCategorySheet, setShowCategorySheet] = useState(false);
 
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch categories to find current one
+                const cats = await getCategories();
+                const foundCat = cats.find(c => c._id === categoryId);
+                setCategory(foundCat);
+
+                // Fetch providers
+                const params = { categoryId };
+                if (selectedCity !== 'All Cities') params.city = selectedCity;
+                if (subCategoryId !== 'all') params.subCategory = subCategoryId;
+                
+                const res = await getProviders(params);
+                setProviders(res);
+            } catch (err) {
+                console.error("Provider fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [categoryId, selectedCity, subCategoryId]);
+
     const cities = ['All Cities', 'Pune', 'Mumbai', 'Nagpur', 'Nashik', 'Indore', 'Delhi', 'Bangalore'];
-
-    const allProviders = React.useMemo(() => {
-        const localProviders = [];
-        const localName = localStorage.getItem('provider_name');
-        const localCategory = localStorage.getItem('provider_category');
-
-        if (localName && localCategory && localCategory.toLowerCase() === categoryId.toLowerCase()) {
-            localProviders.push({
-                id: 'local-provider-unique', // Special ID for the locally created expert
-                name: localName,
-                role: localStorage.getItem('provider_category') || 'Professional Expert',
-                experience: parseInt(localStorage.getItem('provider_experience') || '1'),
-                rating: localStorage.getItem('provider_rating') || '4.8',
-                location: `${localStorage.getItem('provider_city') || 'Local'}, India`,
-                availability: 'available',
-                categoryId: categoryId,
-                subCategoryId: 'all', // Dynamic created experts are in 'all' subcategory by default
-                skills: (localStorage.getItem('provider_specialities') || 'Expertise').split(',').map(s => s.trim()),
-                pricing: `₹${localStorage.getItem('provider_pricing') || '1000'}/day`,
-                avatar: localStorage.getItem('provider_profile_image'),
-                isLocal: true
-            });
-        }
-        return [...localProviders, ...mockProviders];
-    }, [categoryId]);
-
-    const providers = allProviders
-        .filter(p => p.categoryId === categoryId)
-        .filter(p => subCategoryId === 'all' || p.subCategoryId === subCategoryId)
-        .filter(p => filter === 'all' || p.availability === filter)
-        .filter(p => {
-            if (selectedCity === 'All Cities') return true;
-            return p.location.toLowerCase().includes(selectedCity.toLowerCase());
-        })
-        .sort((a, b) => b.experience - a.experience);
 
     const currentSubLabel = subCategoryId === 'all'
         ? `All ${category?.label}s`
-        : (category?.subCategories?.find(s => s.id === subCategoryId)?.label || 'All');
+        : subCategoryId;
 
     return (
         <div style={{ paddingBottom: 80 }}>
@@ -149,7 +123,11 @@ const ProviderList = () => {
 
             {/* Provider Cards */}
             <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {providers.length === 0 ? (
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#6B7280' }}>
+                        Loading experts...
+                    </div>
+                ) : providers.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '60px 20px', color: '#9CA3AF' }}>
                         <div style={{ fontSize: '48px', marginBottom: 16 }}>🔍</div>
                         <p style={{ fontSize: '15px', fontWeight: '700', margin: '0 0 8px', color: '#374151' }}>No experts found</p>
@@ -160,8 +138,8 @@ const ProviderList = () => {
                 ) : (
                     providers.map((p, i) => (
                         <div
-                            key={p.id}
-                            onClick={() => navigate(`/user/provider/${p.id}`)}
+                            key={p._id}
+                            onClick={() => navigate(`/user/provider/${p._id}`)}
                             style={{
                                 background: '#fff',
                                 borderRadius: '24px',
@@ -179,28 +157,28 @@ const ProviderList = () => {
                             {/* Top Row */}
                             <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                                 <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: '#F5F3FF', flexShrink: 0, overflow: 'hidden', border: '1px solid #EDE9FE' }}>
-                                    {p.avatar ? (
-                                        <img src={p.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    {p.profileImage ? (
+                                        <img src={p.profileImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
-                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>{category?.icon}</div>
+                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>{category?.icon || '👤'}</div>
                                     )}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
                                         <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '800', color: '#111827', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            {p.name}
+                                            {p.fullName}
                                         </h3>
                                         <span style={{
                                             padding: '3px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', flexShrink: 0, marginLeft: 8,
-                                            background: p.availability === 'available' ? '#DCFCE7' : '#FFF1F2',
-                                            color: p.availability === 'available' ? '#166534' : '#E11D48',
-                                        }}>{p.availability}</span>
+                                            background: p.isOnline ? '#DCFCE7' : '#FFF1F2',
+                                            color: p.isOnline ? '#166534' : '#E11D48',
+                                        }}>{p.isOnline ? 'Online' : 'Busy'}</span>
                                     </div>
-                                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#6B7280', margin: '0 0 6px 0', fontWeight: '500' }}>{p.role}</p>
+                                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#6B7280', margin: '0 0 6px 0', fontWeight: '500' }}>{p.category}</p>
                                     <div style={{ display: 'flex', gap: 12 }}>
                                         <span style={{ fontSize: '12px', fontWeight: '700', color: '#374151' }}>⭐ {p.rating || '4.5'}</span>
                                         <span style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280' }}>💼 {p.experience}y Exp</span>
-                                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280' }}>📍 {p.location}</span>
+                                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#6B7280' }}>📍 {p.city}</span>
                                     </div>
                                 </div>
                             </div>
@@ -208,7 +186,7 @@ const ProviderList = () => {
                             {/* Skills and Price */}
                             <div style={{ paddingTop: 12, borderTop: '1px solid #F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                    {p.skills.slice(0, 2).map(skill => (
+                                    {(p.specialities || []).slice(0, 2).map(skill => (
                                         <span key={skill} style={{ padding: '4px 10px', borderRadius: '8px', background: '#F5F3FF', fontSize: '11px', color: '#7C3AED', fontWeight: '700' }}>
                                             {skill}
                                         </span>
@@ -216,10 +194,10 @@ const ProviderList = () => {
                                 </div>
                                 <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
                                     <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '900', color: '#111827' }}>
-                                        {p.pricing.split('/')[0]}
+                                        ₹{p.pricing}
                                     </span>
                                     <span style={{ fontSize: '10px', color: '#9CA3AF', fontWeight: '700' }}>
-                                        /{p.pricing.split('/')[1] || 'day'}
+                                        /day
                                     </span>
                                 </div>
                             </div>
@@ -304,29 +282,41 @@ const ProviderList = () => {
                                     display: 'flex', alignItems: 'center', gap: 10
                                 }}
                             >
-                                <span>{category?.icon}</span>
+                                <span>{category?.icon || '🛠️'}</span>
                                 All {category?.label}s
                                 {subCategoryId === 'all' && <span style={{ marginLeft: 'auto', color: '#7C3AED' }}>✓</span>}
                             </button>
-                            {(category?.subCategories || []).map(sub => (
-                                <button
-                                    key={sub.id}
-                                    onClick={() => { setSubCategoryId(sub.id); setShowCategorySheet(false); }}
-                                    style={{
-                                        padding: '14px 18px', borderRadius: '16px', border: '2px solid',
-                                        borderColor: subCategoryId === sub.id ? '#7C3AED' : '#F3F4F6',
-                                        background: subCategoryId === sub.id ? '#F5F3FF' : '#fff',
-                                        color: subCategoryId === sub.id ? '#7C3AED' : '#374151',
-                                        fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '700',
-                                        cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s',
-                                        display: 'flex', alignItems: 'center', gap: 10
-                                    }}
-                                >
-                                    <span>🔧</span>
-                                    {sub.label}
-                                    {subCategoryId === sub.id && <span style={{ marginLeft: 'auto', color: '#7C3AED' }}>✓</span>}
-                                </button>
-                            ))}
+                            {(() => {
+                                const subCats = category?.subCategories || [];
+                                // Safety: If the array contains a stringified array like '["A","B"]', flatten it.
+                                const flattened = subCats.flatMap(sub => {
+                                    try {
+                                        if (typeof sub === 'string' && sub.startsWith('[') && sub.endsWith(']')) {
+                                            return JSON.parse(sub);
+                                        }
+                                        return sub;
+                                    } catch (e) { return sub; }
+                                });
+                                return flattened.map(sub => (
+                                    <button
+                                        key={sub}
+                                        onClick={() => { setSubCategoryId(sub); setShowCategorySheet(false); }}
+                                        style={{
+                                            padding: '14px 18px', borderRadius: '16px', border: '2px solid',
+                                            borderColor: subCategoryId === sub ? '#7C3AED' : '#F3F4F6',
+                                            background: subCategoryId === sub ? '#F5F3FF' : '#fff',
+                                            color: subCategoryId === sub ? '#7C3AED' : '#374151',
+                                            fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '700',
+                                            cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s',
+                                            display: 'flex', alignItems: 'center', gap: 10
+                                        }}
+                                    >
+                                        <span>🔧</span>
+                                        {sub}
+                                        {subCategoryId === sub && <span style={{ marginLeft: 'auto', color: '#7C3AED' }}>✓</span>}
+                                    </button>
+                                ));
+                            })()}
                         </div>
                     </div>
                 </>

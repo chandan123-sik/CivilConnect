@@ -1,24 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createProviderProfile } from '../api/providerApi';
 
 const CreateProfessionalProfile = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         fullName: '',
-        experience: '', // Years
-        rating: '4.8', // Initial dummy rating
+        category: localStorage.getItem('provider_category') || localStorage.getItem('role_category') || '',
+        experience: '', 
         about: '',
-        specialities: '', // Tags (comma separated)
+        specialities: '', 
         pricing: '',
         city: '',
         address: '',
         recentWorkDesc: '',
+        profileImage: null,
+        aadharImage: null,
+        policeVerifyImage: null,
+        workImage: null
     });
-    const [profileImage, setProfileImage] = useState(null);
-    const [workImage, setWorkImage] = useState(null);
-    const [aadharImage, setAadharImage] = useState(null);
-    const [policeImage, setPoliceImage] = useState(null);
+    const [preview, setPreview] = useState({});
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem('cc_provider_token') || localStorage.getItem('cc_temp_token');
+        if (!token) {
+            setError("No authentication token found. Please login again.");
+        }
+    }, [navigate]);
 
     const handleInput = (e) => {
         const { name, value } = e.target;
@@ -29,45 +39,47 @@ const CreateProfessionalProfile = () => {
     const handleImageUpload = (e, target) => {
         const file = e.target.files[0];
         if (file) {
+            setFormData(prev => ({ ...prev, [target]: file }));
             const reader = new FileReader();
             reader.onloadend = () => {
-                if (target === 'profile') setProfileImage(reader.result);
-                else if (target === 'aadhar') setAadharImage(reader.result);
-                else if (target === 'police') setPoliceImage(reader.result);
-                else setWorkImage(reader.result);
+                setPreview(prev => ({ ...prev, [target]: reader.result }));
             };
             reader.readAsDataURL(file);
         }
     };
 
-    const handleSubmit = () => {
-        if (!formData.fullName.trim() || !formData.experience.trim() || !formData.about.trim() || !formData.pricing.trim() || !formData.city.trim() || !formData.address.trim() || !profileImage || !aadharImage || !policeImage) {
+    const handleSubmit = async () => {
+        if (!formData.fullName.trim() || !formData.experience || !formData.about.trim() || !formData.pricing.trim() || !formData.city.trim() || !formData.address.trim() || !formData.profileImage || !formData.aadharImage || !formData.policeVerifyImage) {
             setError('All fields including City, Address, Photo, Aadhar, and Police Verification are mandatory.');
             return;
         }
 
-        // Save professional profile info
-        localStorage.setItem('provider_name', formData.fullName.trim());
-        localStorage.setItem('provider_experience', formData.experience.trim());
-        localStorage.setItem('provider_rating', formData.rating);
-        localStorage.setItem('provider_about', formData.about.trim());
-        localStorage.setItem('provider_specialities', formData.specialities.trim());
-        localStorage.setItem('provider_pricing', formData.pricing.trim());
-        localStorage.setItem('provider_city', formData.city.trim());
-        localStorage.setItem('provider_address', formData.address.trim());
-        localStorage.setItem('provider_work_desc', formData.recentWorkDesc.trim());
-        if (workImage) localStorage.setItem('provider_work_image', workImage);
-        if (profileImage) localStorage.setItem('provider_profile_image', profileImage);
-        if (aadharImage) localStorage.setItem('provider_aadhar_image', aadharImage);
-        if (policeImage) localStorage.setItem('provider_police_verify_image', policeImage);
+        setLoading(true);
+        try {
+            const data = new FormData();
+            Object.keys(formData).forEach(key => {
+                data.append(key, formData[key]);
+            });
 
-        localStorage.setItem('profile_complete', 'true');
-        localStorage.setItem('role', 'provider');
-        localStorage.setItem('last_user_role', 'provider');
-        localStorage.setItem('access_token', 'dummy_provider_token');
+            const res = await createProviderProfile(data);
 
-        // After profile, Go to Plans
-        navigate('/auth/provider-plans');
+            // Update localStorage
+            localStorage.setItem('cc_provider_token', res.token || localStorage.getItem('cc_provider_token') || localStorage.getItem('cc_temp_token') || localStorage.getItem('access_token'));
+            localStorage.setItem('cc_current_role', 'provider');
+            localStorage.setItem('cc_provider_data', JSON.stringify(res.user || res));
+            localStorage.setItem('profile_complete', 'true');
+            
+            // CLEANUP: Remove temporary onboarding tokens
+            localStorage.removeItem('cc_temp_token');
+            localStorage.removeItem('access_token');
+            
+            // After profile, Go to Plans
+            navigate('/auth/provider-plans');
+        } catch (err) {
+            setError(err || "Failed to create profile");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -86,8 +98,8 @@ const CreateProfessionalProfile = () => {
                     {/* Profile Image */}
                     <div className="relative group mb-6">
                         <div className="w-28 h-28 rounded-[38px] bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-[#1E3A8A] shadow-inner">
-                            {profileImage ? (
-                                <img src={profileImage} alt="Preview" className="w-full h-full object-cover" />
+                            {preview.profileImage ? (
+                                <img src={preview.profileImage} alt="Preview" className="w-full h-full object-cover" />
                             ) : (
                                 <div className="text-center p-2">
                                     <svg className="w-8 h-8 mx-auto mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +110,7 @@ const CreateProfessionalProfile = () => {
                                 </div>
                             )}
                         </div>
-                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, 'profile')} />
+                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, 'profileImage')} />
                         <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-[#1E3A8A] rounded-xl flex items-center justify-center text-white shadow-lg border-4 border-white">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
                         </div>
@@ -212,10 +224,10 @@ const CreateProfessionalProfile = () => {
                             <div className="bg-emerald-50/50 rounded-3xl p-5 border-2 border-dashed border-emerald-100">
                                 <label className="text-emerald-800 text-[11px] font-black block mb-3 px-1 uppercase tracking-widest">Aadhar Verification</label>
                                 <div className="relative group">
-                                    <div className={`w-full aspect-[16/8] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all duration-300 overflow-hidden ${aadharImage ? 'border-emerald-500 bg-white' : 'border-slate-200 bg-white hover:border-emerald-400'}`}>
-                                        {aadharImage ? (
+                                    <div className={`w-full aspect-[16/8] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all duration-300 overflow-hidden ${preview.aadharImage ? 'border-emerald-500 bg-white' : 'border-slate-200 bg-white hover:border-emerald-400'}`}>
+                                        {preview.aadharImage ? (
                                             <div className="relative w-full h-full">
-                                                <img src={aadharImage} alt="Aadhar" className="w-full h-full object-cover" />
+                                                <img src={preview.aadharImage} alt="Aadhar" className="w-full h-full object-cover" />
                                                 <div className="absolute inset-x-0 bottom-0 py-1 bg-emerald-600 text-white text-[8px] font-black text-center uppercase tracking-widest">Aadhar Captured</div>
                                             </div>
                                         ) : (
@@ -225,7 +237,7 @@ const CreateProfessionalProfile = () => {
                                             </>
                                         )}
                                     </div>
-                                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, 'aadhar')} />
+                                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, 'aadharImage')} />
                                 </div>
                             </div>
 
@@ -233,10 +245,10 @@ const CreateProfessionalProfile = () => {
                             <div className="bg-blue-50/50 rounded-3xl p-5 border-2 border-dashed border-blue-100">
                                 <label className="text-blue-800 text-[11px] font-black block mb-3 px-1 uppercase tracking-widest">Police Verification</label>
                                 <div className="relative group">
-                                    <div className={`w-full aspect-[16/8] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all duration-300 overflow-hidden ${policeImage ? 'border-blue-500 bg-white' : 'border-slate-200 bg-white hover:border-blue-400'}`}>
-                                        {policeImage ? (
+                                    <div className={`w-full aspect-[16/8] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all duration-300 overflow-hidden ${preview.policeVerifyImage ? 'border-blue-500 bg-white' : 'border-slate-200 bg-white hover:border-blue-400'}`}>
+                                        {preview.policeVerifyImage ? (
                                             <div className="relative w-full h-full">
-                                                <img src={policeImage} alt="Police" className="w-full h-full object-cover" />
+                                                <img src={preview.policeVerifyImage} alt="Police" className="w-full h-full object-cover" />
                                                 <div className="absolute inset-x-0 bottom-0 py-1 bg-blue-600 text-white text-[8px] font-black text-center uppercase tracking-widest">Document Captured</div>
                                             </div>
                                         ) : (
@@ -246,37 +258,40 @@ const CreateProfessionalProfile = () => {
                                             </>
                                         )}
                                     </div>
-                                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, 'police')} />
+                                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, 'policeVerifyImage')} />
                                 </div>
                             </div>
                         </div>
 
                         {/* Recent Work Portfolio */}
-                        <div className="bg-slate-50/50 rounded-3xl p-6 border-2 border-dashed border-slate-100">
-                            <label className="text-slate-700 text-[13px] font-bold block mb-2 px-1">Showcase Recent Work</label>
-                            <div className="flex gap-4 items-start">
-                                <div className="relative shrink-0">
-                                    <div className="w-20 h-20 rounded-2xl bg-white border border-slate-200 flex items-center justify-center overflow-hidden shadow-sm">
-                                        {workImage ? (
-                                            <img src={workImage} alt="Work" className="w-full h-full object-cover" />
+                        <div className="bg-indigo-50/50 rounded-3xl p-5 border-2 border-dashed border-indigo-100">
+                            <label className="text-indigo-800 text-[11px] font-black block mb-3 px-1 uppercase tracking-widest">Showcase Recent Work</label>
+                            <div className="space-y-4">
+                                <div className="relative group">
+                                    <div className={`w-full aspect-[16/8] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all duration-300 overflow-hidden ${preview.workImage ? 'border-indigo-500 bg-white' : 'border-slate-200 bg-white hover:border-indigo-400'}`}>
+                                        {preview.workImage ? (
+                                            <div className="relative w-full h-full">
+                                                <img src={preview.workImage} alt="Work" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-x-0 bottom-0 py-1 bg-indigo-600 text-white text-[8px] font-black text-center uppercase tracking-widest">Work Example Captured</div>
+                                            </div>
                                         ) : (
-                                            <svg className="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            </svg>
+                                            <>
+                                                <svg className="w-6 h-6 text-slate-300 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest text-center px-4">Upload Best Work Image</p>
+                                            </>
                                         )}
                                     </div>
-                                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, 'work')} />
+                                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, 'workImage')} />
                                 </div>
-                                <div className="flex-1">
-                                    <textarea
-                                        name="recentWorkDesc"
-                                        value={formData.recentWorkDesc}
-                                        onChange={handleInput}
-                                        placeholder="Describe this project..."
-                                        className="w-full bg-white rounded-xl p-3 text-xs font-bold text-slate-900 placeholder:text-slate-500 outline-none border border-slate-100 min-h-[80px] grow"
-                                    />
-                                </div>
+                                <textarea
+                                    name="recentWorkDesc"
+                                    value={formData.recentWorkDesc}
+                                    onChange={handleInput}
+                                    placeholder="Briefly describe this project (e.g. Dream House Painting)..."
+                                    className="w-full border-2 border-slate-50 bg-white rounded-2xl p-4 text-[13px] font-bold text-slate-900 placeholder:text-slate-300 focus:border-indigo-600 outline-none transition-all resize-none h-24 shadow-sm"
+                                />
                             </div>
                         </div>
 
@@ -286,11 +301,12 @@ const CreateProfessionalProfile = () => {
 
                         <div className="pt-6">
                             <button
-                                onClick={handleSubmit}
-                                className="w-full bg-[#1E3A8A] text-white py-5 rounded-[18px] text-base font-[1000] tracking-[0.1em] shadow-2xl shadow-blue-900/30 active:scale-95 transition-all outline-none"
-                            >
-                                Complete business bio
-                            </button>
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className={`w-full py-5 rounded-[24px] text-sm font-[1000] uppercase tracking-[0.3em] shadow-2xl shadow-indigo-900/30 active:scale-95 transition-all outline-none ${loading ? 'bg-slate-200 text-slate-400' : 'bg-gradient-to-r from-indigo-700 to-blue-800 text-white'}`}
+                        >
+                            {loading ? 'Registering...' : 'Build My Presence'}
+                        </button>
                         </div>
                     </div>
                 </div>

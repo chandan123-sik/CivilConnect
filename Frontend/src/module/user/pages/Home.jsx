@@ -1,50 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ClipboardList, CheckCircle } from 'lucide-react';
-import { mockCategories, mockProviders, mockMaterials } from '../mockData';
+import { getHomeUnified } from '../../../api/publicApi';
+import { getOrders, getHiringHistory, getUserProfile, getReports } from '../../../api/userApi';
+import axiosInstance from '../../../api/axiosInstance';
 
-const Home = () => {
-    const navigate = useNavigate();
-    const [userName] = useState(localStorage.getItem('user_name') || 'Guest');
-    const [userCity] = useState(localStorage.getItem('user_city') || 'Pune');
-    const [profileImg] = useState(localStorage.getItem('user_profile_image'));
-
-    const bannerRef = React.useRef(null);
+const PromoBanners = ({ banners }) => {
+    const bannerRef = useRef(null);
     const [currentBanner, setCurrentBanner] = useState(0);
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [userNotifications, setUserNotifications] = useState([]);
-
-    const loadNotifications = () => {
-        const orders = JSON.parse(localStorage.getItem('cc_material_orders') || '[]');
-        // Only show updates for accepted/rejected orders
-        const updates = orders.filter(o => o.status !== 'pending').map(o => ({
-            id: o.id,
-            status: o.status,
-            brand: o.brand.name || o.brand,
-            deliveryTime: o.deliveryTime || 'N/A',
-            createdAt: o.createdAt
-        }));
-        setUserNotifications(updates.reverse());
-    };
 
     useEffect(() => {
-        loadNotifications();
-        const handleStorage = () => loadNotifications();
-        window.addEventListener('storage', handleStorage);
-        return () => window.removeEventListener('storage', handleStorage);
-    }, []);
-
-    const banners = React.useMemo(() => {
-        const saved = localStorage.getItem('cc_home_banners');
-        if (saved) return JSON.parse(saved);
-        return [
-            { title: 'Premium Construction Materials', desc: 'Get daily updated rates for cement, steel and more.', img: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=80' },
-            { title: 'Verified Expert Manpower', desc: 'Directly connect with top-rated contractors & engineers.', img: 'https://images.unsplash.com/photo-1503387762-592dea58ef21?w=800&q=80' },
-            { title: 'Secure & Direct Connection', desc: 'Connect directly with experts without middlemen.', img: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=80' }
-        ];
-    }, []);
-
-    React.useEffect(() => {
+        if (!banners || banners.length === 0) return;
         const interval = setInterval(() => {
             if (bannerRef.current) {
                 const next = (currentBanner + 1) % banners.length;
@@ -56,9 +22,9 @@ const Home = () => {
                 });
                 setCurrentBanner(next);
             }
-        }, 4000); // Increased to 4s for better readability
+        }, 4000);
         return () => clearInterval(interval);
-    }, [currentBanner, banners.length]);
+    }, [currentBanner, banners?.length]);
 
     const handleScroll = (e) => {
         const scrollLeft = e.target.scrollLeft;
@@ -69,6 +35,209 @@ const Home = () => {
             setCurrentBanner(index);
         }
     };
+
+    if (!banners || banners.length === 0) return null;
+
+    return (
+        <div style={{ position: 'relative', marginBottom: 0 }}>
+            <div
+                ref={bannerRef}
+                onScroll={handleScroll}
+                style={{
+                    display: 'flex',
+                    overflowX: 'auto',
+                    padding: '16px 14px 0',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    scrollSnapType: 'x mandatory',
+                    gap: 28
+                }} className="hide-scrollbar">
+                {banners.map((item, idx) => (
+                    <div key={idx} style={{
+                        position: 'relative',
+                        minWidth: 'calc(100vw - 28px)',
+                        width: 'calc(100vw - 28px)',
+                        height: '160px',
+                        borderRadius: '20px',
+                        padding: '24px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+                        scrollSnapAlign: 'start',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        overflow: 'hidden'
+                    }}>
+                        <img 
+                            src={item.image || item.img} 
+                            alt={item.title} 
+                            fetchPriority={idx === 0 ? "high" : "low"} 
+                            loading={idx === 0 ? "eager" : "lazy"} 
+                            decoding="async" 
+                            crossOrigin="anonymous"
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} 
+                        />
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 70%)', zIndex: 1 }} />
+                        <div style={{ position: 'relative', zIndex: 2 }}>
+                            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: '900', color: '#fff', margin: '0 0 6px 0', lineHeight: 1.2, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+                                {item.title}
+                            </h3>
+                            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#fff', margin: 0, maxWidth: '280px', fontWeight: '500', textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                                {item.description || item.desc || item.subtitle}
+                            </p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Banner Indicators (Dots) */}
+            <div style={{
+                display: 'flex', justifyContent: 'center', gap: 6, marginTop: 12
+            }}>
+                {banners.map((_, idx) => (
+                    <div key={idx} style={{
+                        width: currentBanner === idx ? '20px' : '6px',
+                        height: '6px',
+                        borderRadius: '3px',
+                        background: currentBanner === idx ? '#7C3AED' : '#E5E7EB',
+                        transition: 'all 0.3s ease'
+                    }} />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const Home = () => {
+    const navigate = useNavigate();
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [userNotifications, setUserNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [lastRead, setLastRead] = useState(localStorage.getItem('user_notif_last_read') || '1970-01-01T00:00:00.000Z');
+    const [hasUnread, setHasUnread] = useState(false);
+    
+    const [homeData, setHomeData] = useState({
+        user: null,
+        banners: [],
+        categories: [],
+        providers: [],
+        materials: []
+    });
+
+    const loadNotifications = async () => {
+        try {
+            let reportsArr = [];
+            const [orders, leads] = await Promise.all([getOrders(), getHiringHistory()]);
+            
+            try {
+                const repRes = await getReports();
+                // Handle different response formats from axiosInstance
+                if (Array.isArray(repRes)) {
+                    reportsArr = repRes;
+                } else if (repRes?.data && Array.isArray(repRes.data)) {
+                    reportsArr = repRes.data;
+                } else if (repRes?.data?.data && Array.isArray(repRes.data.data)) {
+                    reportsArr = repRes.data.data;
+                }
+            } catch (e) { 
+                console.error("Support reports fetch fail:", e); 
+            }
+            
+            const orderUpdates = (orders || []).filter(o => o.status !== 'pending').map(o => ({
+                id: o._id,
+                status: o.status,
+                title: o.materialName,
+                subtitle: o.brand,
+                type: 'Material',
+                createdAt: o.createdAt
+            }));
+
+            const leadUpdates = (leads || []).filter(l => l.status !== 'pending').map(l => ({
+                id: l._id,
+                status: l.status,
+                title: l.providerId?.fullName || l.serviceType || 'Service Request',
+                subtitle: l.serviceType,
+                type: 'Service',
+                createdAt: l.createdAt
+            }));
+
+            const reportUpdates = reportsArr.filter(r => r.status === 'Resolved' && r.reply).map(r => ({
+                id: r._id,
+                status: 'replied',
+                title: 'Support Team Reply',
+                subtitle: r.reply,
+                type: 'Support',
+                createdAt: r.updatedAt
+            }));
+
+            const combined = [...orderUpdates, ...leadUpdates, ...reportUpdates].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            setUserNotifications(combined);
+            
+            // Calculate unread status
+            if (combined.length > 0) {
+                const latestNotifTime = new Date(combined[0].createdAt).getTime();
+                const lastReadTime = new Date(localStorage.getItem('user_notif_last_read') || '1970-01-01T00:00:00.000Z').getTime();
+                setHasUnread(latestNotifTime > lastReadTime);
+            } else {
+                setHasUnread(false);
+            }
+        } catch (err) {
+            console.error("Critical Notification Error:", err);
+        }
+    };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch unified data + User Profile in parallel
+                const [unifiedRes, profileRes] = await Promise.all([
+                    getHomeUnified(),
+                    getUserProfile()
+                ]);
+
+                const defaultBanners = [
+                    { title: 'Premium Construction Materials', description: 'Get daily updated rates for cement, steel and more.', image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=70&fm=webp' },
+                    { title: 'Verified Expert Manpower', description: 'Directly connect with top-rated contractors & engineers.', image: 'https://images.unsplash.com/photo-1503387762-592dea58ef21?w=800&q=70&fm=webp' },
+                    { title: 'Quality Site Management', description: 'Track progress and manage your construction site efficiently.', image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=70&fm=webp' }
+                ];
+
+                setHomeData({
+                    user: profileRes,
+                    banners: [...(unifiedRes.banners || []).map(b => ({ ...b, image: `${b.image || b.img}${ (b.image || b.img).includes('?') ? '&' : '?' }w=800&q=70&fm=webp` })), ...defaultBanners],
+                    categories: unifiedRes.categories || [],
+                    providers: unifiedRes.providers || [],
+                    materials: unifiedRes.materials || []
+                });
+
+                // Load notifications in background without blocking
+                setTimeout(loadNotifications, 1000);
+
+            } catch (err) {
+                console.error("Home data fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    useEffect(() => {
+        if (showNotifications) {
+            document.body.style.overflow = 'hidden';
+            if (window.lenis) window.lenis.stop();
+        } else {
+            document.body.style.overflow = 'unset';
+            if (window.lenis) window.lenis.start();
+        }
+        return () => { 
+            document.body.style.overflow = 'unset'; 
+            if (window.lenis) window.lenis.start();
+        };
+    }, [showNotifications]);
+
 
     return (
         <div style={{ paddingBottom: 20 }}>
@@ -91,7 +260,7 @@ const Home = () => {
                             Good day <span style={{ fontSize: '18px' }}>👋</span>
                         </p>
                         <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: '900', color: '#fff', margin: 0, letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {userName}
+                            {homeData.user?.fullName || 'Guest'}
                         </h1>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -106,13 +275,21 @@ const Home = () => {
                             border: '1px solid rgba(255,255,255,0.2)'
                         }}>
                             <span style={{ fontSize: '14px' }}>📍</span>
-                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: '700', color: '#fff' }}>{userCity}</span>
+                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: '700', color: '#fff' }}>{homeData.user?.city || 'India'}</span>
                         </div>
 
                         {/* Notification Bell */}
                         <div style={{ position: 'relative' }}>
                             <button
-                                onClick={() => setShowNotifications(!showNotifications)}
+                                onClick={() => {
+                                    setShowNotifications(!showNotifications);
+                                    if (!showNotifications) {
+                                        const now = new Date().toISOString();
+                                        setLastRead(now);
+                                        localStorage.setItem('user_notif_last_read', now);
+                                        setHasUnread(false);
+                                    }
+                                }}
                                 style={{
                                     width: '38px', height: '38px', borderRadius: '12px',
                                     background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
@@ -121,7 +298,7 @@ const Home = () => {
                                 }}
                             >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" /></svg>
-                                {userNotifications.length > 0 && <span style={{ position: 'absolute', top: '8px', right: '8px', width: '7px', height: '7px', background: '#EF4444', borderRadius: '50%', border: '1.5px solid #7C3AED', boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)' }} />}
+                                {hasUnread && <span style={{ position: 'absolute', top: '8px', right: '8px', width: '7px', height: '7px', background: '#EF4444', borderRadius: '50%', border: '1.5px solid #7C3AED', boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)' }} />}
                             </button>
 
                             {/* Premium Side Drawer Notifications */}
@@ -140,8 +317,8 @@ const Home = () => {
                                     />
                                     {/* Drawer */}
                                     <div style={{
-                                        position: 'fixed', top: 0, right: 0,
-                                        width: '85%', maxWidth: '340px', height: '100vh',
+                                        position: 'fixed', top: 0, right: 0, bottom: 0,
+                                        width: '85%', maxWidth: '340px',
                                         background: '#fff',
                                         boxShadow: '-10px 0 30px rgba(0,0,0,0.1)',
                                         zIndex: 3000,
@@ -164,37 +341,60 @@ const Home = () => {
                                                 </div>
                                             ) : (
                                                 userNotifications.map(notif => (
-                                                    <div key={notif.id} style={{ padding: '16px', borderRadius: '20px', background: notif.status === 'accepted' ? '#F0FDF4' : '#FEF2F2', border: '1px solid', borderColor: notif.status === 'accepted' ? '#DCFCE7' : '#FEE2E2', position: 'relative' }}>
-                                                        <div style={{ display: 'flex', gap: 12 }}>
-                                                            <div style={{
-                                                                width: '10px', height: '10px', borderRadius: '50%',
-                                                                background: notif.status === 'accepted' ? '#10B981' : '#EF4444',
-                                                                marginTop: '4px'
-                                                            }} />
-                                                            <div>
-                                                                <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '800', color: notif.status === 'accepted' ? '#166534' : '#991B1B' }}>
-                                                                    {notif.status === 'accepted' ? 'Order Confirmed' : 'Order Rejected'}
-                                                                </p>
-                                                                <p style={{ margin: 0, fontSize: '11px', fontWeight: '600', color: notif.status === 'accepted' ? '#15803D' : '#B91C1C', lineHeight: 1.5 }}>
-                                                                    {notif.brand}: {notif.status === 'accepted' ? `Your material is arriving in ${notif.deliveryTime}.` : 'The order was declined by admin.'}
-                                                                </p>
-                                                                <p style={{ margin: '8px 0 0', fontSize: '9px', fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase' }}>
-                                                                    {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                </p>
-                                                            </div>
+                                                    <div key={notif.id} 
+                                                        onClick={() => {
+                                                            setShowNotifications(false);
+                                                            if (notif.type === 'Material') {
+                                                                navigate('/user/materials?view=orders');
+                                                            } else if (notif.type === 'Support') {
+                                                                navigate('/user/profile');
+                                                            } else {
+                                                                navigate('/user/requests');
+                                                            }
+                                                        }}
+                                                        style={{ 
+                                                            padding: '16px', 
+                                                            borderRadius: '20px', 
+                                                            background: notif.type === 'Support' ? '#F0F9FF' : (notif.status === 'accepted' ? '#F0FDF4' : '#FEF2F2'), 
+                                                            border: '1px solid', 
+                                                            borderColor: notif.type === 'Support' ? '#E0F2FE' : (notif.status === 'accepted' ? '#DCFCE7' : '#FEE2E2'),
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                            <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#1F2937' }}>{notif.title}</h5>
+                                                            <span style={{ fontSize: '10px', color: '#94A3B8', fontWeight: '600' }}>
+                                                                {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
                                                         </div>
+                                                        <p style={{ margin: 0, fontSize: '12px', color: notif.type === 'Support' ? '#0369A1' : (notif.status === 'accepted' ? '#15803D' : '#B91C1C'), fontWeight: '700' }}>
+                                                            {notif.type}: {notif.status.charAt(0).toUpperCase() + notif.status.slice(1)}
+                                                        </p>
+                                                        <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#64748B', fontWeight: '500' }}>
+                                                            {notif.subtitle}
+                                                        </p>
                                                     </div>
                                                 ))
                                             )}
                                         </div>
 
-                                        <div style={{ padding: '20px', background: '#F8FAFC', borderTop: '1px solid #F1F5F9' }}>
-                                            <button
-                                                onClick={() => { setShowNotifications(false); navigate('/user/materials'); }}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', color: '#fff', fontSize: '13px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 12px rgba(124, 58, 237, 0.2)' }}
-                                            >
-                                                VIEW ALL ORDERS
-                                            </button>
+                                        <div style={{ padding: '16px 20px 32px 20px', background: '#F8FAFC', borderTop: '1px solid #F1F5F9', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {userNotifications.some(n => n.type === 'Material') && (
+                                                <button
+                                                    onClick={() => { setShowNotifications(false); navigate('/user/materials?view=orders'); }}
+                                                    style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)', color: '#fff', fontSize: '12px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 12px rgba(124, 58, 237, 0.2)' }}
+                                                >
+                                                    📦 VIEW MATERIAL ORDERS
+                                                </button>
+                                            )}
+                                            {userNotifications.some(n => n.type === 'Service') && (
+                                                <button
+                                                    onClick={() => { setShowNotifications(false); navigate('/user/requests'); }}
+                                                    style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)', color: '#fff', fontSize: '12px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.2)' }}
+                                                >
+                                                    🔧 VIEW SERVICE REQUESTS
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </>
@@ -202,230 +402,183 @@ const Home = () => {
                         </div>
                     </div>
                 </div>
-            </header >
+            </header>
 
             {/* Horizontal Promo Banners */}
-            < div style={{ position: 'relative', marginBottom: 0 }}>
-                <div
-                    ref={bannerRef}
-                    onScroll={handleScroll}
-                    style={{
-                        display: 'flex',
-                        overflowX: 'auto',
-                        padding: '16px 14px 0',
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none',
-                        scrollSnapType: 'x mandatory',
-                        gap: 28
-                    }} className="hide-scrollbar">
-                    {banners.map((item, idx) => (
-                        <div key={idx} style={{
-                            minWidth: 'calc(100vw - 28px)',
-                            width: 'calc(100vw - 28px)',
-                            height: '160px',
-                            background: `linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 70%), url("${item.img}")`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            borderRadius: '20px',
-                            padding: '24px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-                            scrollSnapAlign: 'start',
-                            border: '1px solid rgba(255,255,255,0.2)'
-                        }}>
-                            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: '900', color: '#fff', margin: '0 0 6px 0', lineHeight: 1.2, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
-                                {item.title}
-                            </h3>
-                            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#fff', margin: 0, maxWidth: '280px', fontWeight: '500', textShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
-                                {item.desc}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Banner Indicators (Dots) */}
-                <div style={{
-                    display: 'flex', justifyContent: 'center', gap: 6, marginTop: 12
-                }}>
-                    {banners.map((_, idx) => (
-                        <div key={idx} style={{
-                            width: currentBanner === idx ? '20px' : '6px',
-                            height: '6px',
-                            borderRadius: '3px',
-                            background: currentBanner === idx ? '#7C3AED' : '#E5E7EB',
-                            transition: 'all 0.3s ease'
-                        }} />
-                    ))}
-                </div>
-            </div >
+            <PromoBanners banners={homeData.banners} />
 
             {/* Horizontal Categories Scroll */}
-            < section style={{ padding: '0 0 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 10 }}>
-                    <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
-                        Categories
-                    </h2>
-                    <button
-                        onClick={() => navigate('/user/categories')}
-                        style={{ background: 'none', border: 'none', color: '#7C3AED', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
-                    >
-                        View All
-                    </button>
-                </div>
-
-                <div style={{
-                    display: 'flex',
-                    gap: '12px',
-                    overflowX: 'auto',
-                    padding: '2px 20px 10px',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                    scrollSnapType: 'x mandatory'
-                }} className="hide-scrollbar">
-                    {mockCategories.map(cat => (
-                        <div
-                            key={cat.id}
-                            onClick={() => navigate(`/user/categories/${cat.id}`)}
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, minWidth: '78px', scrollSnapAlign: 'start' }}
+            {useMemo(() => (
+                <section style={{ padding: '0 0 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 10 }}>
+                        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
+                            Categories
+                        </h2>
+                        <button
+                            onClick={() => navigate('/user/categories')}
+                            style={{ background: 'none', border: 'none', color: '#7C3AED', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
                         >
-                            <div style={{
-                                width: '64px',
-                                height: '64px',
-                                background: '#fff',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '26px',
-                                boxShadow: '0 6px 16px rgba(124, 58, 237, 0.08)',
-                                border: '1px solid rgba(124, 58, 237, 0.08)',
-                                transition: 'all 0.3s ease'
-                            }}
-                                className="category-card-hover"
+                            View All
+                        </button>
+                    </div>
+
+                    <div style={{
+                        display: 'flex',
+                        gap: '12px',
+                        overflowX: 'auto',
+                        padding: '2px 20px 10px',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                        scrollSnapType: 'x mandatory'
+                    }} className="hide-scrollbar">
+                        {homeData.categories.map(cat => (
+                            <div
+                                key={cat._id}
+                                onClick={() => navigate(`/user/categories/${cat._id}`)}
+                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, minWidth: '78px', scrollSnapAlign: 'start' }}
                             >
-                                {cat.icon}
+                                <div style={{
+                                    width: '64px',
+                                    height: '64px',
+                                    background: '#fff',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '26px',
+                                    boxShadow: '0 6px 16px rgba(124, 58, 237, 0.08)',
+                                    border: '1px solid rgba(124, 58, 237, 0.08)',
+                                    transition: 'all 0.3s ease'
+                                }}
+                                    className="category-card-hover"
+                                >
+                                    {cat.icon && typeof cat.icon === 'string' && cat.icon.startsWith('http') ? (
+                                        <img src={cat.icon} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={cat.label} />
+                                    ) : (cat.icon || '🛠️')}
+                                </div>
+                                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', color: '#1F2937', textAlign: 'center', width: '74px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {cat.label}
+                                </span>
                             </div>
-                            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', color: '#1F2937', textAlign: 'center', width: '74px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {cat.label}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            </section >
+                        ))}
+                    </div>
+                </section>
+            ), [homeData.categories, navigate])}
 
             {/* Popular Providers Horizontal Scroll */}
-            < section style={{ padding: '0 0 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 16 }}>
-                    <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
-                        Popular Experts
-                    </h2>
-                </div>
+            {useMemo(() => (
+                <section style={{ padding: '0 0 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 16 }}>
+                        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
+                            Popular Experts
+                        </h2>
+                    </div>
 
-                <div style={{
-                    display: 'flex',
-                    gap: 16,
-                    overflowX: 'auto',
-                    padding: '4px 16px 10px',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
-                }} className="hide-scrollbar">
-                    {mockProviders.slice(0, 5).map(provider => (
-                        <div
-                            key={provider.id}
-                            onClick={() => navigate(`/user/provider/${provider.id}`)}
-                            style={{
-                                minWidth: '160px',
-                                background: '#fff',
-                                borderRadius: '20px',
-                                padding: '18px',
-                                boxShadow: '0 8px 20px rgba(124, 58, 237, 0.06)',
-                                border: '1px solid rgba(124, 58, 237, 0.04)',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center'
-                            }}
-                        >
-                            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F3F4F6', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', overflow: 'hidden' }}>
-                                {provider.avatar ? <img src={provider.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" alt={provider.name} /> : provider.categoryId === 'contractor' ? '🏗️' : '👤'}
+                    <div style={{
+                        display: 'flex',
+                        gap: 16,
+                        overflowX: 'auto',
+                        padding: '4px 16px 10px',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                    }} className="hide-scrollbar">
+                        {homeData.providers.map(provider => (
+                            <div
+                                key={provider._id}
+                                onClick={() => navigate(`/user/provider/${provider._id}`)}
+                                style={{
+                                    minWidth: '160px',
+                                    background: '#fff',
+                                    borderRadius: '20px',
+                                    padding: '18px',
+                                    boxShadow: '0 8px 20px rgba(124, 58, 237, 0.06)',
+                                    border: '1px solid rgba(124, 58, 237, 0.04)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    textAlign: 'center'
+                                }}
+                            >
+                                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F3F4F6', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', overflow: 'hidden' }}>
+                                    {provider.profileImage ? <img src={provider.profileImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" crossOrigin="anonymous" alt={provider.fullName} /> : (provider.category === 'contractor' ? '🏗️' : '👤')}
+                                </div>
+                                <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '800', color: '#1F2937', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {provider.fullName}
+                                </h4>
+                                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#6B7280', margin: '0 0 12px 0', fontWeight: '500' }}>{provider.role || provider.category}</p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span style={{ fontSize: '14px' }}>⭐</span>
+                                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', color: '#1F2937' }}>{provider.rating || '4.5'}</span>
+                                </div>
                             </div>
-                            <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '800', color: '#1F2937', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {provider.name}
-                            </h4>
-                            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#6B7280', margin: '0 0 12px 0', fontWeight: '500' }}>{provider.role}</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <span style={{ fontSize: '14px' }}>⭐</span>
-                                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: '800', color: '#1F2937' }}>{provider.rating || '4.5'}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section >
+                        ))}
+                    </div>
+                </section>
+            ), [homeData.providers, navigate])}
 
             {/* Popular Materials Horizontal Scroll */}
-            < section style={{ padding: '0 0 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 16 }}>
-                    <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
-                        Popular Materials
-                    </h2>
-                    <button
-                        onClick={() => navigate('/user/materials')}
-                        style={{ background: 'none', border: 'none', color: '#7C3AED', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
-                    >
-                        View All
-                    </button>
-                </div>
-
-                <div style={{
-                    display: 'flex',
-                    gap: 16,
-                    overflowX: 'auto',
-                    padding: '4px 16px 10px',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
-                }} className="hide-scrollbar">
-                    {mockMaterials.slice(0, 4).map(m => (
-                        <div
-                            key={m.id}
+            {useMemo(() => (
+                <section style={{ padding: '0 0 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 16 }}>
+                        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '17px', fontWeight: '800', color: '#1F2937', margin: 0 }}>
+                            Popular Materials
+                        </h2>
+                        <button
                             onClick={() => navigate('/user/materials')}
-                            style={{
-                                minWidth: 'calc((100% - 16px) / 2)',
-                                width: 'calc((100% - 16px) / 2)',
-                                background: '#fff',
-                                borderRadius: '20px',
-                                overflow: 'hidden',
-                                boxShadow: '0 8px 20px rgba(124, 58, 237, 0.05)',
-                                border: '1px solid rgba(124, 58, 237, 0.04)',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                flexDirection: 'column'
-                            }}
+                            style={{ background: 'none', border: 'none', color: '#7C3AED', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
                         >
-                            <div style={{ height: '90px', width: '100%', overflow: 'hidden', background: '#F3F4F6' }}>
-                                <img src={m.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" alt={m.name} />
-                            </div>
-                            <div style={{ padding: '12px' }}>
-                                <div style={{ fontSize: '10px', color: '#7C3AED', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.02em' }}>
-                                    {m.category}
+                            View All
+                        </button>
+                    </div>
+
+                    <div style={{
+                        display: 'flex',
+                        gap: 16,
+                        overflowX: 'auto',
+                        padding: '4px 16px 10px',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                    }} className="hide-scrollbar">
+                        {homeData.materials.map(m => (
+                            <div
+                                key={m._id}
+                                onClick={() => navigate('/user/materials')}
+                                style={{
+                                    minWidth: 'calc((100% - 16px) / 2)',
+                                    width: 'calc((100% - 16px) / 2)',
+                                    background: '#fff',
+                                    borderRadius: '20px',
+                                    overflow: 'hidden',
+                                    boxShadow: '0 8px 20px rgba(124, 58, 237, 0.05)',
+                                    border: '1px solid rgba(124, 58, 237, 0.04)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column'
+                                }}
+                            >
+                                <div style={{ height: '90px', width: '100%', overflow: 'hidden', background: '#F3F4F6' }}>
+                                    <img src={m.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" crossOrigin="anonymous" alt={m.name} />
                                 </div>
-                                <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '800', color: '#1F2937', margin: '0 0 4px 0', lineClamp: 1, overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 1 }}>
-                                    {m.name}
-                                </h4>
-                                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#10B981', margin: 0, fontWeight: '900' }}>
-                                    {m.price} <span style={{ color: '#6B7280', fontSize: '10px', fontWeight: '600' }}>{m.unit}</span>
-                                </p>
+                                <div style={{ padding: '12px' }}>
+                                    <div style={{ fontSize: '10px', color: '#7C3AED', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.02em' }}>
+                                        {m.category}
+                                    </div>
+                                    <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: '800', color: '#1F2937', margin: '0 0 4px 0', lineClamp: 1, overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 1 }}>
+                                        {m.name}
+                                    </h4>
+                                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#10B981', margin: 0, fontWeight: '900' }}>
+                                        ₹{m.price} <span style={{ color: '#6B7280', fontSize: '10px', fontWeight: '600' }}>{m.unit}</span>
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </section >
+                        ))}
+                    </div>
+                </section>
+            ), [homeData.materials, navigate])}
 
             {/* How It Works Section */}
-            < section style={{ padding: '10px 16px 20px' }}>
+            <section style={{ padding: '10px 16px 20px' }}>
                 <div style={{
                     background: '#fff',
                     borderRadius: '24px',
@@ -467,7 +620,7 @@ const Home = () => {
                         ))}
                     </div>
                 </div>
-            </section >
+            </section>
             <style>{`
                 .hide-scrollbar::-webkit-scrollbar { display: none; }
                 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -494,7 +647,7 @@ const Home = () => {
 
                 .category-card-hover:active { transform: scale(0.9); }
             `}</style>
-        </div >
+        </div>
     );
 };
 

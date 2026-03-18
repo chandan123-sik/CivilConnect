@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { showToast } from '../components/Toast';
 
 const RoleSelection = () => {
     const navigate = useNavigate();
@@ -15,37 +16,31 @@ const RoleSelection = () => {
     const handleContinue = () => {
         if (!selectedRole) return;
 
-        // Set the chosen role immediately
-        localStorage.setItem('role', selectedRole);
+        // Set the chosen role immediately (temporary state until profile complete)
+        localStorage.setItem('cc_current_role', selectedRole);
 
         const isProfileComplete = localStorage.getItem('profile_complete') === 'true';
-        const previousRole = localStorage.getItem('last_user_role'); // Track if role changed during test
+        const previousRole = localStorage.getItem('cc_last_user_role'); // Track if role changed during test
 
         if (selectedRole === 'user') {
-            // Update temporary token to role-specific one
-            localStorage.setItem('access_token', 'dummy_user_token');
-
             if (isProfileComplete && previousRole === 'user') {
                 navigate('/user/home');
             } else {
                 // If switching from provider to user for testing, or brand new
-                localStorage.setItem('last_user_role', 'user');
+                localStorage.setItem('cc_last_user_role', 'user');
                 navigate('/auth/complete-profile');
             }
 
         } else if (selectedRole === 'provider') {
-            // Update temporary token to role-specific one
-            localStorage.setItem('access_token', 'dummy_provider_token');
-
             if (isProfileComplete && previousRole === 'provider') {
                 navigate('/serviceprovider/home');
             } else {
                 if (!category.trim()) {
-                    alert('Please enter your professional category');
+                    showToast('Please enter your professional category', 'error');
                     return;
                 }
-                localStorage.setItem('provider_category', category.trim());
-                localStorage.setItem('last_user_role', 'provider');
+                localStorage.setItem('cc_provider_category', category.trim());
+                localStorage.setItem('cc_last_user_role', 'provider');
                 navigate('/auth/create-professional-profile');
             }
         }

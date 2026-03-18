@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { MoreVertical, UserPlus, Phone, MapPin, Trash2, Edit2, ShieldAlert, X, Bell } from 'lucide-react';
+import { getWorkers, addWorker, updateWorker, deleteWorker } from '../../../api/providerApi';
 
 const Workers = () => {
     const [workers, setWorkers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeMenu, setActiveMenu] = useState(null);
     const [editingWorker, setEditingWorker] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [submitLoading, setSubmitLoading] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -18,25 +21,21 @@ const Workers = () => {
     });
 
     // Load from localStorage
-    useEffect(() => {
-        const saved = localStorage.getItem('cc_provider_workers');
-        if (saved) setWorkers(JSON.parse(saved));
-        else {
-            // Seed with dummy if empty
-            const dummy = [
-                { id: 1, name: 'Umesh', phone: '98798798796', gender: 'Male', city: 'Pune', location: 'Hinjewadi', image: '', status: 'active' },
-                { id: 2, name: 'Dinesh', phone: '9789879897', gender: 'Male', city: 'Pune', location: 'Wakad', image: '', status: 'active' },
-                { id: 3, name: 'Mukesh', phone: '9898989898', gender: 'Male', city: 'Pune', location: 'Baner', image: '', status: 'active' },
-            ];
-            setWorkers(dummy);
-            localStorage.setItem('cc_provider_workers', JSON.stringify(dummy));
+    const loadWorkers = async () => {
+        setLoading(true);
+        try {
+            const res = await getWorkers();
+            setWorkers(res);
+        } catch (err) {
+            console.error("Failed to load workers:", err);
+        } finally {
+            setLoading(false);
         }
-    }, []);
-
-    const saveToLocal = (newList) => {
-        setWorkers(newList);
-        localStorage.setItem('cc_provider_workers', JSON.stringify(newList));
     };
+
+    useEffect(() => {
+        loadWorkers();
+    }, []);
 
     const handleInput = (e) => {
         const { name, value } = e.target;
@@ -46,26 +45,31 @@ const Workers = () => {
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => setFormData(prev => ({ ...prev, image: reader.result }));
-            reader.readAsDataURL(file);
+            setFormData(prev => ({ ...prev, image: file }));
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (editingWorker) {
-            const newList = workers.map(w => w.id === editingWorker.id ? { ...w, ...formData } : w);
-            saveToLocal(newList);
-        } else {
-            const newWorker = {
-                id: Date.now(),
-                ...formData,
-                status: 'active'
-            };
-            saveToLocal([newWorker, ...workers]);
+        setSubmitLoading(true);
+        try {
+            const data = new FormData();
+            Object.keys(formData).forEach(key => {
+                data.append(key, formData[key]);
+            });
+
+            if (editingWorker) {
+                await updateWorker(editingWorker._id, data);
+            } else {
+                await addWorker(data);
+            }
+            loadWorkers();
+            closeModal();
+        } catch (err) {
+            alert(err || "Failed to save worker");
+        } finally {
+            setSubmitLoading(false);
         }
-        closeModal();
     };
 
     const openModal = (worker = null) => {
@@ -84,15 +88,26 @@ const Workers = () => {
         setEditingWorker(null);
     };
 
-    const handleDelete = (id) => {
-        const newList = workers.filter(w => w.id !== id);
-        saveToLocal(newList);
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to remove this worker?")) return;
+        try {
+            await deleteWorker(id);
+            loadWorkers();
+        } catch (err) {
+            alert(err || "Failed to delete worker");
+        }
         setActiveMenu(null);
     };
 
-    const handleBlock = (id) => {
-        const newList = workers.map(w => w.id === id ? { ...w, status: w.status === 'blocked' ? 'active' : 'blocked' } : w);
-        saveToLocal(newList);
+    const handleBlock = async (id, currentStatus) => {
+        try {
+            const formData = new FormData();
+            formData.append('status', currentStatus === 'blocked' ? 'active' : 'blocked');
+            await updateWorker(id, formData);
+            loadWorkers();
+        } catch (err) {
+            alert("Status update failed");
+        }
         setActiveMenu(null);
     };
 
@@ -124,9 +139,11 @@ const Workers = () => {
                     </div>
                 </div>
 
-                {workers.map((worker) => (
+                {loading ? (
+                    <div className="text-center py-10 text-slate-400 font-bold">Loading workforce...</div>
+                ) : workers.map((worker) => (
                     <div
-                        key={worker.id}
+                        key={worker._id}
                         className={`bg-white rounded-[24px] p-4 shadow-[0_4px_15px_rgba(0,0,0,0.02)] border-[1.5px] ${worker.status === 'blocked' ? 'border-red-100 bg-red-50/20' : 'border-[#F1F5F9]'} transition-all flex items-center gap-4 relative`}
                     >
                         {/* Avatar */}
@@ -165,13 +182,13 @@ const Workers = () => {
                         {/* Action Menu */}
                         <div className="relative">
                             <button
-                                onClick={() => setActiveMenu(activeMenu === worker.id ? null : worker.id)}
+                                onClick={() => setActiveMenu(activeMenu === worker._id ? null : worker._id)}
                                 className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors outline-none"
                             >
                                 <MoreVertical size={20} />
                             </button>
 
-                            {activeMenu === worker.id && (
+                            {activeMenu === worker._id && (
                                 <>
                                     <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)} />
                                     <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-xl shadow-xl border border-slate-100 z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -182,13 +199,13 @@ const Workers = () => {
                                             <Edit2 size={14} className="text-blue-500" /> Edit
                                         </button>
                                         <button
-                                            onClick={() => handleBlock(worker.id)}
+                                            onClick={() => handleBlock(worker._id, worker.status)}
                                             className={`w-full flex items-center gap-2 px-3 py-2 text-[12px] font-bold hover:bg-slate-50 transition-colors ${worker.status === 'blocked' ? 'text-green-600' : 'text-amber-600'}`}
                                         >
                                             <ShieldAlert size={14} /> {worker.status === 'blocked' ? 'Unblock' : 'Block'}
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(worker.id)}
+                                            onClick={() => handleDelete(worker._id)}
                                             className="w-full flex items-center gap-2 px-3 py-2 text-red-600 text-[12px] font-bold hover:bg-slate-50 transition-colors"
                                         >
                                             <Trash2 size={14} /> Delete
@@ -223,7 +240,7 @@ const Workers = () => {
                                 <div className="relative group">
                                     <div className="w-28 h-28 rounded-[36px] bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-[#1E3A8A] relative">
                                         {formData.image ? (
-                                            <img src={formData.image} alt="Preview" className="w-full h-full object-cover absolute inset-0" />
+                                            <img src={typeof formData.image === 'string' ? formData.image : URL.createObjectURL(formData.image)} alt="Preview" className="w-full h-full object-cover absolute inset-0" />
                                         ) : (
                                             <div className="text-center text-slate-400">
                                                 <UserPlus size={28} className="mx-auto" />
@@ -283,9 +300,10 @@ const Workers = () => {
 
                             <button
                                 type="submit"
-                                className="w-full py-5 bg-[#1E3A8A] text-white rounded-[24px] text-[16px] font-[1000] uppercase tracking-widest shadow-xl shadow-blue-900/20 active:scale-95 transition-all mt-6"
+                                disabled={submitLoading}
+                                className="w-full py-5 bg-[#1E3A8A] text-white rounded-[24px] text-[16px] font-[1000] uppercase tracking-widest shadow-xl shadow-blue-900/20 active:scale-95 transition-all mt-6 disabled:opacity-50"
                             >
-                                {editingWorker ? 'Update Details' : 'Register Worker'}
+                                {submitLoading ? 'Saving...' : (editingWorker ? 'Update Details' : 'Register Worker')}
                             </button>
                         </form>
                     </div>

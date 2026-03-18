@@ -9,6 +9,7 @@ import RoleSelection from './auth/RoleSelection';
 import CompleteProfile from './auth/CompleteProfile';
 import ProviderOnboardingPlans from './auth/ProviderOnboardingPlans';
 import CreateProfessionalProfile from './auth/CreateProfessionalProfile';
+import ToastContainer from './components/Toast';
 
 // Admin Panel Pages
 import AdminLogin from './module/admin/auth/AdminLogin';
@@ -19,7 +20,7 @@ import UserManagement from './module/admin/pages/UserManagement';
 import ProviderManagement from './module/admin/pages/ProviderManagement';
 import CategoryManagement from './module/admin/pages/CategoryManagement';
 import RequestMonitor from './module/admin/pages/RequestMonitor';
-import DisputeCenter from './module/admin/pages/DisputeCenter';
+import Reports from './module/admin/pages/DisputeCenter';
 import SubscriptionPlans from './module/admin/pages/SubscriptionPlans';
 import RevenueDashboard from './module/admin/pages/RevenueDashboard';
 import MaterialsCatalog from './module/admin/pages/MaterialsCatalog';
@@ -48,19 +49,55 @@ import ProviderProfileManagement from './module/serviceprovider/pages/Profile';
 import ProviderWorkers from './module/serviceprovider/pages/Workers';
 
 // Auth Guard
-const RequireAuth = ({ children }) => {
-  const token = localStorage.getItem('access_token');
-  if (!token) return <Navigate to="/" replace />;
+const RequireAuth = ({ children, role }) => {
+  let token = null;
+  
+  if (role === 'admin') {
+    token = localStorage.getItem('cc_admin_token');
+  } else if (role === 'provider') {
+    token = localStorage.getItem('cc_provider_token');
+  } else {
+    token = localStorage.getItem('cc_user_token');
+  }
+
+  // Cleanup legacy access_token whenever we check auth
+  if (localStorage.getItem('access_token')) {
+    localStorage.removeItem('access_token');
+  }
+
+  if (!token) {
+    if (role === 'admin') return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/" replace />;
+  }
+  return children;
+};
+
+// Subscription Guard for Providers
+const SubscriptionGuard = ({ children }) => {
+  const providerData = JSON.parse(localStorage.getItem('cc_provider_data') || '{}');
+  const expiry = providerData.subscriptionExpiry;
+  
+  const isExpired = !expiry || new Date(expiry) < new Date();
+
+  if (isExpired) {
+    return <Navigate to="/serviceprovider/subscription" replace />;
+  }
+
   return children;
 };
 
 function App() {
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         {/* ── Admin Auth & Dashboard ── */}
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={<AdminLayout />}>
+        <Route path="/admin/dashboard" element={
+          <RequireAuth role="admin">
+            <AdminLayout />
+          </RequireAuth>
+        }>
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<AdminDashboard />} />
           <Route path="approvals" element={<ApprovalManagement />} />
@@ -68,7 +105,7 @@ function App() {
           <Route path="providers" element={<ProviderManagement />} />
           <Route path="categories" element={<CategoryManagement />} />
           <Route path="requests" element={<RequestMonitor />} />
-          <Route path="disputes" element={<DisputeCenter />} />
+          <Route path="reports" element={<Reports />} />
           <Route path="subscriptions" element={<SubscriptionPlans />} />
           <Route path="revenue" element={<RevenueDashboard />} />
           <Route path="materials" element={<MaterialsCatalog />} />
@@ -87,7 +124,7 @@ function App() {
 
         {/* ── Client Panel Protected ── All nested under ClientLayout ── */}
         <Route path="/user" element={
-          <RequireAuth>
+          <RequireAuth role="user">
             <ClientLayout />
           </RequireAuth>
         }>
@@ -102,18 +139,22 @@ function App() {
 
         {/* Provider profile — full screen, outside ClientLayout (no bottom nav) */}
         <Route path="/user/provider/:providerId" element={
-          <RequireAuth>
+          <RequireAuth role="user">
             <ProviderProfile />
           </RequireAuth>
         } />
 
         {/* ── Service Provider Panel Panel ── */}
-        <Route path="/serviceprovider" element={<ProviderLayout />}>
+        <Route path="/serviceprovider" element={
+          <RequireAuth role="provider">
+            <ProviderLayout />
+          </RequireAuth>
+        }>
           <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<ProviderHome />} />
-          <Route path="requests" element={<ProviderRequests />} />
+          <Route path="home" element={<SubscriptionGuard><ProviderHome /></SubscriptionGuard>} />
+          <Route path="requests" element={<SubscriptionGuard><ProviderRequests /></SubscriptionGuard>} />
           <Route path="subscription" element={<ProviderSubscription />} />
-          <Route path="workers" element={<ProviderWorkers />} />
+          <Route path="workers" element={<SubscriptionGuard><ProviderWorkers /></SubscriptionGuard>} />
           <Route path="profile" element={<ProviderProfileManagement />} />
         </Route>
 

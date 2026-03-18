@@ -1,117 +1,85 @@
-import React, { useState } from 'react';
-
-const initialRequests = [
-    {
-        id: 'APP-1001',
-        providerName: 'Rajesh Kumar',
-        category: 'Civil Engineering',
-        plan: 'Annual Elite',
-        date: '2026-03-05',
-        status: 'Pending',
-        documents: ['Aadhar Card', 'Degree Certificate', 'Business License'],
-        experience: '8 Years',
-        location: 'Mumbai, Maharashtra',
-        mobile: '+91 98765 43210'
-    },
-    {
-        id: 'APP-1002',
-        providerName: 'Amit Sharma',
-        category: 'Home Painting',
-        plan: 'Standard Monthly',
-        date: '2026-03-06',
-        status: 'On-Hold',
-        documents: ['PAN Card', 'Work Portfolio'],
-        experience: '5 Years',
-        location: 'Delhi, NCR',
-        mobile: '+91 87654 32109'
-    },
-    {
-        id: 'APP-1003',
-        providerName: 'Anjali Mehta',
-        category: 'Interior Design',
-        plan: 'Quarterly Pro',
-        date: '2026-03-04',
-        status: 'Pending',
-        documents: ['Aadhar Card', 'GST Certificate', 'Portfolio PDF'],
-        experience: '12 Years',
-        location: 'Bangalore, Karnataka',
-        mobile: '+91 76543 21098'
-    },
-    {
-        id: 'APP-1004',
-        providerName: 'Vikram Singh',
-        category: 'Electrical Works',
-        plan: 'Standard Monthly',
-        date: '2026-03-06',
-        status: 'Pending',
-        documents: ['ITI Certificate', 'Aadhar Card'],
-        experience: '4 Years',
-        location: 'Jaipur, Rajasthan',
-        mobile: '+91 65432 10987'
-    },
-    {
-        id: 'APP-1005',
-        providerName: 'Sunita Rao',
-        category: 'Plumbing Service',
-        plan: 'Standard Monthly',
-        date: '2026-03-07',
-        status: 'Pending',
-        documents: ['Aadhar Card', 'Trade License'],
-        experience: '6 Years',
-        location: 'Pune, Maharashtra',
-        mobile: '+91 99900 88811'
-    },
-    {
-        id: 'APP-1006',
-        providerName: 'Karan Malhotra',
-        category: 'Civil Contracting',
-        plan: 'Annual Elite',
-        date: '2026-03-07',
-        status: 'Pending',
-        documents: ['GST Certificate', 'Business License'],
-        experience: '15 Years',
-        location: 'Chennai, Tamil Nadu',
-        mobile: '+91 88811 77722'
-    }
-];
+import React, { useState, useEffect } from 'react';
+import { getPendingApprovals, updateApprovalStatus } from '../../../api/adminApi';
+import { showToast } from '../../../components/Toast';
 
 const ApprovalManagement = () => {
-    const [requests, setRequests] = useState(initialRequests);
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 8;
 
-    const handleAction = (id, newStatus) => {
-        setRequests(requests.map(req => req.id === id ? { ...req, status: newStatus } : req));
-        setSelectedRequest(null);
+    const fetchApprovals = async () => {
+        setLoading(true);
+        try {
+            const res = await getPendingApprovals();
+            const data = res.data || res;
+            setRequests(data);
+        } catch (err) {
+            console.error("Failed to fetch approvals:", err);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const filteredRequests = requests.filter(req => {
-        const matchesStatus = filterStatus === 'All' || req.status === filterStatus;
-        const matchesSearch = req.providerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            req.category.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesStatus && matchesSearch;
-    });
+    useEffect(() => {
+        fetchApprovals();
+    }, []);
 
-    // Pagination Logic
+    const handleAction = async (id, newStatus) => {
+        try {
+            const statusMap = {
+                'Approved': 'approved',
+                'Rejected': 'rejected',
+                'On-Hold': 'pending'
+            };
+            const finalStatus = statusMap[newStatus] || newStatus.toLowerCase();
+            
+            await updateApprovalStatus(id, finalStatus);
+            setSelectedRequest(null);
+            fetchApprovals();
+            showToast(`Provider ${finalStatus === 'approved' ? 'approved' : 'rejected'} successfully.`, 'success');
+        } catch (err) {
+            console.error("Update error:", err);
+            showToast("Failed to update status.", "error");
+        }
+    };
+
+    const filteredRequests = (requests || [])
+        .filter(req => {
+            const status = req.approvalStatus || 'pending';
+            const matchesStatus = filterStatus === 'All' || status.toLowerCase() === filterStatus.toLowerCase();
+            const matchesSearch = (req.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (req.category || '').toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesStatus && matchesSearch;
+        })
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
     const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedRequests = filteredRequests.slice(startIndex, startIndex + itemsPerPage);
 
     const getStatusColor = (status) => {
-        switch (status) {
-            case 'Approved': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'Rejected': return 'bg-red-100 text-red-700 border-red-200';
-            case 'On-Hold': return 'bg-amber-100 text-amber-700 border-amber-200';
-            default: return 'bg-blue-100 text-blue-700 border-blue-200';
+        const s = status?.toLowerCase();
+        switch (s) {
+            case 'approved': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            case 'rejected': return 'bg-red-100 text-red-700 border-red-200';
+            case 'pending': return 'bg-blue-100 text-blue-700 border-blue-200';
+            default: return 'bg-slate-100 text-slate-700 border-slate-200';
         }
+    };
+
+    const getImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        return `http://localhost:5000/${path.replace(/\\/g, '/')}`;
     };
 
     return (
         <div className="max-w-7xl mx-auto pb-10 animate-in fade-in duration-500">
-            {/* ── Header ── */}
+            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                 <div>
                     <h1 className="text-slate-900 text-3xl font-[1000] tracking-tighter">Approval Gateway</h1>
@@ -119,7 +87,7 @@ const ApprovalManagement = () => {
                 </div>
 
                 <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm gap-1 overflow-x-auto w-full md:w-auto">
-                    {['All', 'Pending', 'On-Hold', 'Approved'].map(status => (
+                    {['All', 'Pending', 'Approved'].map(status => (
                         <button
                             key={status}
                             onClick={() => {
@@ -134,12 +102,12 @@ const ApprovalManagement = () => {
                 </div>
             </div>
 
-            {/* ── Search & Metrics ── */}
+            {/* Search */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
                 <div className="lg:col-span-3 relative">
                     <input
                         type="text"
-                        placeholder="Search by expert name or category..."
+                        placeholder="Search by expert name..."
                         value={searchQuery}
                         onChange={(e) => {
                             setSearchQuery(e.target.value);
@@ -152,57 +120,52 @@ const ApprovalManagement = () => {
                 <div className="bg-emerald-600 rounded-[22px] p-4 flex items-center justify-between shadow-lg shadow-emerald-600/20">
                     <div className="text-white">
                         <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Total Pending</p>
-                        <p className="text-2xl font-[1000] leading-none mt-1">{requests.filter(r => r.status === 'Pending').length}</p>
-                    </div>
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <p className="text-2xl font-[1000] leading-none mt-1">{requests.filter(r => r.approvalStatus === 'pending').length}</p>
                     </div>
                 </div>
             </div>
 
-            {/* ── Request Inventory ── */}
+            {/* Table */}
             <div className="bg-white border border-slate-100 rounded-[40px] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left order-collapse">
+                    <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50">
                                 <th className="py-5 px-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">Expert Identity</th>
                                 <th className="py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Service & Experience</th>
                                 <th className="py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Selected Plan</th>
-                                <th className="py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Application Date</th>
                                 <th className="py-5 px-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Security Status</th>
                                 <th className="py-5 px-8 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {paginatedRequests.map((req) => (
-                                <tr key={req.id} className="hover:bg-slate-50/50 transition-all group">
+                                <tr key={req._id} className="hover:bg-slate-50/50 transition-all group">
                                     <td className="py-6 px-8">
                                         <div className="flex items-center gap-4">
                                             <div className="w-11 h-11 rounded-2xl bg-slate-100 flex items-center justify-center font-black text-slate-500 text-[11px] border border-slate-200 uppercase">
-                                                {req.providerName.split(' ').map(n => n[0]).join('')}
+                                                {(req.fullName || 'U').split(' ').map(n => n[0]).join('')}
                                             </div>
                                             <div>
-                                                <p className="text-slate-900 font-extrabold text-[15px] tracking-tight">{req.providerName}</p>
-                                                <p className="text-slate-400 text-[10px] uppercase font-black tracking-widest">{req.id}</p>
+                                                <p className="text-slate-900 font-extrabold text-[15px] tracking-tight">{req.fullName}</p>
+                                                <p className="text-slate-400 text-[10px] uppercase font-black tracking-widest">
+                                                    ID: {req._id.slice(-6).toUpperCase()} | {req.lastTransactionId?.transactionId || 'NO-TXN'}
+                                                </p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="py-6 px-6">
                                         <div className="flex flex-col">
                                             <span className="text-slate-800 font-bold text-sm mb-1">{req.category}</span>
-                                            <span className="text-emerald-600 text-[10px] font-black uppercase tracking-widest">{req.experience} Experience</span>
+                                            <span className="text-emerald-600 text-[10px] font-black uppercase tracking-widest">{req.experience || 0} Yrs Experience</span>
                                         </div>
                                     </td>
                                     <td className="py-6 px-6 text-sm font-black text-slate-500 uppercase tracking-widest">
-                                        {req.plan}
-                                    </td>
-                                    <td className="py-6 px-6">
-                                        <p className="text-slate-500 text-xs font-bold whitespace-nowrap">{new Date(req.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                                        {req.subscriptionId?.name || 'Standard'}
                                     </td>
                                     <td className="py-6 px-6 text-center">
-                                        <span className={`inline-flex px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] border ${getStatusColor(req.status)}`}>
-                                            {req.status}
+                                        <span className={`inline-flex px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] border ${getStatusColor(req.approvalStatus)}`}>
+                                            {req.approvalStatus || 'pending'}
                                         </span>
                                     </td>
                                     <td className="py-6 px-8 text-right">
@@ -215,168 +178,69 @@ const ApprovalManagement = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {filteredRequests.length === 0 && (
-                                <tr>
-                                    <td colSpan="6" className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                                        No approval requests found.
-                                    </td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
                 </div>
-
-                {/* Pagination Footer */}
-                <div className="p-6 border-t border-slate-50 bg-white flex items-center justify-between">
-                    <p className="text-[12px] font-medium text-slate-500">
-                        Reviewing <span className="font-bold text-slate-900">{paginatedRequests.length}</span> of <span className="font-bold text-slate-900">{filteredRequests.length}</span> pending cases
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
-                        </button>
-
-                        {[...Array(totalPages)].map((_, i) => (
-                            <button
-                                key={i + 1}
-                                onClick={() => setCurrentPage(i + 1)}
-                                className={`w-10 h-10 rounded-xl text-[13px] font-[1000] transition-all ${currentPage === i + 1 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'} `}
-                            >
-                                {i + 1}
-                            </button>
-                        ))}
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages || totalPages === 0}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-emerald-600 transition-all disabled:opacity-30 disabled:hover:text-slate-400"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                    </div>
-                </div>
             </div>
 
-            {/* ── Review Modal ── */}
+            {/* Modal */}
             {selectedRequest && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedRequest(null)} />
-                    <div className="relative bg-white rounded-[40px] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        {/* Modal Header */}
-                        <div className="p-7 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
-                            <div>
-                                <h2 className="text-xl font-[1000] text-slate-900 tracking-tighter leading-none">Case Audit: {selectedRequest.providerName}</h2>
-                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1.5">Verification workflow for internal onboarding</p>
-                            </div>
-                            <button onClick={() => setSelectedRequest(null)} className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedRequest(null)} />
+                    <div className="relative bg-white rounded-[32px] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h2 className="text-xl font-[1000] text-slate-900 tracking-tighter">Case Audit: {selectedRequest.fullName}</h2>
+                            <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
-
-                        <div className="p-7 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                            <div className="grid grid-cols-2 gap-6 mb-8">
-                                <div>
-                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-3">Professional Bio</p>
-                                    <div className="space-y-3.5">
-                                        <div>
-                                            <p className="text-[10px] text-slate-500 font-bold mb-0.5">Field of Expertise</p>
-                                            <p className="text-[13px] font-black text-slate-900">{selectedRequest.category}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-slate-500 font-bold mb-0.5">Operating Location</p>
-                                            <p className="text-[13px] font-black text-slate-900">{selectedRequest.location}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-slate-500 font-bold mb-0.5">Experience Level</p>
-                                            <p className="text-[13px] font-black text-emerald-600">{selectedRequest.experience}</p>
-                                        </div>
-                                    </div>
+                        
+                        <div className="p-6 max-h-[70vh] overflow-y-auto">
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="p-4 bg-slate-50 rounded-2xl">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Category</p>
+                                    <p className="text-sm font-bold text-slate-900">{selectedRequest.category}</p>
                                 </div>
-                                <div>
-                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-3">Onboarding Choice</p>
-                                    <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <p className="text-[10px] text-slate-500 font-bold mb-0.5 uppercase tracking-widest">Subscription Tier</p>
-                                        <p className="text-lg font-[1000] text-slate-900 mb-1.5">{selectedRequest.plan}</p>
-                                        <div className="flex items-center gap-2 text-emerald-600 font-bold text-[9px] uppercase">
-                                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                            Payment Authorized
-                                        </div>
-                                    </div>
+                                <div className="p-4 bg-slate-50 rounded-2xl">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Tier</p>
+                                    <p className="text-sm font-bold text-emerald-600">{selectedRequest.subscriptionId?.name || 'Standard'}</p>
+                                </div>
+                                <div className="p-4 bg-slate-50 rounded-2xl">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Payment ID</p>
+                                    <p className="text-[10px] font-bold text-slate-900 break-all">{selectedRequest.lastTransactionId?.transactionId || 'N/A'}</p>
+                                </div>
+                                <div className="p-4 bg-slate-50 rounded-2xl">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Payment Method</p>
+                                    <p className="text-[10px] font-bold text-slate-900 break-all">{selectedRequest.lastTransactionId?.paymentMethod || 'UPI'}</p>
                                 </div>
                             </div>
 
-                            {/* Verification Documents Section */}
-                            <div className="mb-8">
-                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-4">Identity & Legal Documents</p>
+                            <div className="space-y-4 mb-6">
+                                <p className="text-[10px] font-black text-slate-400 uppercase px-1">Verification Documents</p>
                                 <div className="grid grid-cols-2 gap-4">
-                                    {/* Aadhar Display */}
-                                    <div className="group cursor-default">
-                                        <div className="aspect-[16/10] bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center group-hover:border-emerald-500 transition-all overflow-hidden relative">
-                                            {localStorage.getItem('provider_aadhar_image') ? (
-                                                <img
-                                                    src={localStorage.getItem('provider_aadhar_image')}
-                                                    alt="Aadhar"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <span className="text-[8px] font-black text-slate-400 uppercase">Aadhar Missing</span>
-                                            )}
-                                            <div className="absolute top-2 left-2 bg-emerald-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow">AADHAR</div>
-                                        </div>
+                                    <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden border border-slate-200 relative">
+                                        {selectedRequest.aadharImage ? (
+                                            <img src={getImageUrl(selectedRequest.aadharImage)} className="w-full h-full object-cover" alt="Aadhar" />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-[10px] font-bold text-slate-400">AADHAR MISSING</div>
+                                        )}
+                                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/50 text-white text-[8px] font-bold rounded">AADHAR</div>
                                     </div>
-
-                                    {/* Police Verification Display */}
-                                    <div className="group cursor-default">
-                                        <div className="aspect-[16/10] bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center group-hover:border-blue-500 transition-all overflow-hidden relative">
-                                            {localStorage.getItem('provider_police_verify_image') ? (
-                                                <img
-                                                    src={localStorage.getItem('provider_police_verify_image')}
-                                                    alt="Police Verify"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <span className="text-[8px] font-black text-slate-400 uppercase">Police Cert Missing</span>
-                                            )}
-                                            <div className="absolute top-2 left-2 bg-blue-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow">POLICE VERIFY</div>
-                                        </div>
+                                    <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden border border-slate-200 relative">
+                                        {selectedRequest.policeVerifyImage ? (
+                                            <img src={getImageUrl(selectedRequest.policeVerifyImage)} className="w-full h-full object-cover" alt="Police" />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-[10px] font-bold text-slate-400">POLICE CERT MISSING</div>
+                                        )}
+                                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/50 text-white text-[8px] font-bold rounded">POLICE VERIFY</div>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Internal Audit Notes */}
-                            <div>
-                                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Internal Reviewer Notes</label>
-                                <textarea
-                                    className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[12px] font-bold text-slate-800 h-20 focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none"
-                                    placeholder="Add notes for team reference..."
-                                />
-                            </div>
                         </div>
 
-                        {/* Modal Footer Actions */}
-                        <div className="p-7 bg-slate-50 border-t border-slate-100 grid grid-cols-3 gap-3">
-                            <button
-                                onClick={() => handleAction(selectedRequest.id, 'On-Hold')}
-                                className="py-3.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-amber-400 hover:text-amber-600 transition-all shadow-sm active:scale-95"
-                            >
-                                On-Hold
-                            </button>
-                            <button
-                                onClick={() => handleAction(selectedRequest.id, 'Rejected')}
-                                className="py-3.5 bg-red-50 border border-red-100 text-red-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95"
-                            >
-                                Reject
-                            </button>
-                            <button
-                                onClick={() => handleAction(selectedRequest.id, 'Approved')}
-                                className="py-3.5 bg-emerald-600 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95"
-                            >
-                                Approve
-                            </button>
+                        <div className="p-6 bg-slate-50 flex gap-3">
+                            <button onClick={() => handleAction(selectedRequest._id, 'Rejected')} className="flex-1 py-3.5 bg-white border border-slate-200 text-red-600 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-red-50 hover:border-red-200 transition-all">Reject</button>
+                            <button onClick={() => handleAction(selectedRequest._id, 'Approved')} className="flex-1 py-3.5 bg-emerald-600 text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 transition-all">Approve</button>
                         </div>
                     </div>
                 </div>

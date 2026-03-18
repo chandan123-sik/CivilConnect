@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { mockProviders, mockCategories } from '../mockData';
+import { getProviderDetails, getCategories } from '../../../api/publicApi';
+import { createLead } from '../../../api/userApi';
 
 const ProviderProfile = () => {
     const { providerId } = useParams();
@@ -10,35 +11,28 @@ const ProviderProfile = () => {
     const [requestText, setRequestText] = useState('');
     const [requestBudget, setRequestBudget] = useState('');
 
-    const allProviders = React.useMemo(() => {
-        const localProviders = [];
-        const localName = localStorage.getItem('provider_name');
-        if (localName) {
-            localProviders.push({
-                id: 'local-provider-unique', // Same ID used in ProviderList.jsx
-                name: localName,
-                role: localStorage.getItem('provider_category') || 'Expert Professional',
-                experience: localStorage.getItem('provider_experience') || '1',
-                rating: localStorage.getItem('provider_rating') || '4.8',
-                location: `${localStorage.getItem('provider_city') || 'Local'}, India`,
-                availability: 'available',
-                categoryId: localStorage.getItem('provider_category')?.toLowerCase() || 'contractor',
-                skills: (localStorage.getItem('provider_specialities') || 'Civil Work').split(',').map(s => s.trim()),
-                pricing: `₹${localStorage.getItem('provider_pricing') || '1000'}/day`,
-                avatar: localStorage.getItem('provider_profile_image'),
-                bio: localStorage.getItem('provider_about') || 'No Bio provided.',
-                portfolio: localStorage.getItem('provider_work_image') ? [{
-                    id: 'local-work-1',
-                    image: localStorage.getItem('provider_work_image'),
-                    desc: localStorage.getItem('provider_work_desc') || 'Project Showcase'
-                }] : []
-            });
-        }
-        return [...localProviders, ...mockProviders];
-    }, []);
+    const [provider, setProvider] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const provider = allProviders.find(p => p.id === providerId);
-    const category = mockCategories.find(c => c.id === provider?.categoryId);
+    useEffect(() => {
+        const fetchProvider = async () => {
+            try {
+                const res = await getProviderDetails(providerId);
+                setProvider(res);
+            } catch (err) {
+                console.error("Failed to fetch provider details:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProvider();
+    }, [providerId]);
+
+    if (loading) return (
+        <div style={{ padding: '100px 40px', textAlign: 'center', background: '#F8FAFC', minHeight: '100vh', color: '#6B7280' }}>
+            Loading profile...
+        </div>
+    );
 
     if (!provider) return (
         <div style={{ padding: '100px 40px', textAlign: 'center', background: '#F8FAFC', minHeight: '100vh' }}>
@@ -49,42 +43,33 @@ const ProviderProfile = () => {
         </div>
     );
 
-    const handleSendRequest = () => {
-        if (!requestText.trim()) return;
+    const handleSendRequest = async () => {
+        if (!requestText.trim() || loading) return;
+        setLoading(true);
 
-        // Capture User Info from LocalStorage
-        const userName = localStorage.getItem('user_name') || 'Guest User';
-        const userCity = localStorage.getItem('user_city') || 'Pune';
-        const userArea = localStorage.getItem('user_area') || '';
-        const userLocation = userArea ? `${userCity}, ${userArea}` : userCity;
+        try {
+            await createLead({
+                providerId: provider._id,
+                serviceType: provider.category,
+                projectType: 'Residential',
+                description: requestText,
+                budget: requestBudget || 'Negotiable',
+                location: localStorage.getItem('user_city') || 'Unknown'
+            });
 
-        // Create New Lead Object
-        const newLead = {
-            id: Date.now(),
-            type: provider.categoryName === 'Residential' ? '🏠 Residential' : '✨ Expert Service',
-            client: userName,
-            providerName: provider.name,
-            loc: userLocation,
-            service: provider.role,
-            desc: requestText,
-            price: requestBudget ? `₹${Number(requestBudget).toLocaleString('en-IN')}` : 'Negotiable',
-            date: 'Just Now',
-            status: 'pending',
-            phone: localStorage.getItem('user_phone') || '+91 00000 00000'
-        };
-
-        // Save to LocalStorage leads pool
-        const existingLeads = JSON.parse(localStorage.getItem('cc_leads') || '[]');
-        localStorage.setItem('cc_leads', JSON.stringify([newLead, ...existingLeads]));
-
-        setRequestSent(true);
-        setTimeout(() => {
-            setIsRequestModalOpen(false);
-            setRequestSent(false);
-            setRequestText('');
-            setRequestBudget('');
-            navigate('/user/profile');
-        }, 1500);
+            setRequestSent(true);
+            setTimeout(() => {
+                setIsRequestModalOpen(false);
+                setRequestSent(false);
+                setRequestText('');
+                setRequestBudget('');
+                navigate('/user/requests');
+            }, 1500);
+        } catch (err) {
+            alert(err || "Failed to send request");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -128,8 +113,8 @@ const ProviderProfile = () => {
                         marginBottom: 12
                     }}>
                         <div style={{ width: '100%', height: '100%', borderRadius: '21px', overflow: 'hidden', background: '#F5F3FF' }}>
-                            {provider.avatar ? (
-                                <img src={provider.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            {provider.profileImage ? (
+                                <img src={provider.profileImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>
                                     👤
@@ -137,8 +122,8 @@ const ProviderProfile = () => {
                             )}
                         </div>
                     </div>
-                    <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: '900', color: '#fff', margin: '0 0 2px 0' }}>{provider.name}</h2>
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.7)', margin: '0 0 16px 0', fontWeight: '500' }}>{provider.role}</p>
+                    <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: '900', color: '#fff', margin: '0 0 2px 0' }}>{provider.fullName}</h2>
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'rgba(255,255,255,0.7)', margin: '0 0 16px 0', fontWeight: '500' }}>{provider.role || provider.category}</p>
 
                     {/* Floating Stats */}
                     <div style={{
@@ -157,7 +142,7 @@ const ProviderProfile = () => {
                             <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', margin: 0, textTransform: 'uppercase' }}>Rating</p>
                         </div>
                         <div style={{ textAlign: 'center', padding: '0 12px' }}>
-                            <p style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: 0 }}>200+</p>
+                            <p style={{ fontSize: '16px', fontWeight: '800', color: '#fff', margin: 0 }}>{provider.jobsDone || 0}</p>
                             <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', margin: 0, textTransform: 'uppercase' }}>Jobs</p>
                         </div>
                     </div>
@@ -169,7 +154,7 @@ const ProviderProfile = () => {
                     <div>
                         <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: '800', color: '#1F2937', margin: '0 0 12px 0' }}>About</h3>
                         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: 0 }}>
-                            {provider.bio}
+                            {provider.about}
                         </p>
                     </div>
 
@@ -177,7 +162,7 @@ const ProviderProfile = () => {
                     <div>
                         <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: '800', color: '#1F2937', margin: '0 0 12px 0' }}>Specialties</h3>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                            {provider.skills.map(skill => (
+                            {(provider.specialities || []).map(skill => (
                                 <div key={skill} style={{
                                     padding: '10px 16px', borderRadius: '14px',
                                     background: '#fff', color: '#7C3AED',
@@ -283,7 +268,7 @@ const ProviderProfile = () => {
                         {!requestSent ? (
                             <>
                                 <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: '800', color: '#1F2937', margin: '0 0 8px 0' }}>Request Service</h3>
-                                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', margin: '0 0 24px 0' }}>Tell {provider.name.split(' ')[0]} about the work you need.</p>
+                                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: '#6B7280', margin: '0 0 24px 0' }}>Tell {provider.fullName.split(' ')[0]} about the work you need.</p>
 
                                 <textarea
                                     autoFocus
