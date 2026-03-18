@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, Star, AlertCircle, UserCircle, Camera, Plus, X, ChevronRight, Upload } from 'lucide-react';
+import { ShieldCheck, Star, AlertCircle, UserCircle, Camera, Plus, X, ChevronRight, Upload, Languages } from 'lucide-react';
 import { getProviderProfile, updateProviderProfile, submitFeedback, submitReport } from '../../../api/providerApi';
 import { getPolicy } from '../../../api/publicApi';
 import axiosInstance from '../../../api/axiosInstance';
@@ -14,6 +14,8 @@ const ProviderProfile = () => {
     const [reports, setReports] = useState([]);
     const [reportText, setReportText] = useState('');
     const [reportSuccess, setReportSuccess] = useState(false);
+    const [showLanguage, setShowLanguage] = useState(false);
+    const [selectedLang, setSelectedLang] = useState('English');
 
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [formData, setFormData] = useState({
@@ -62,6 +64,7 @@ const ProviderProfile = () => {
 
     const [newWorkImg, setNewWorkImg] = useState(null);
     const [newWorkDesc, setNewWorkDesc] = useState('');
+    const [newSkillModal, setNewSkillModal] = useState('');
 
     const specialtiesList = useMemo(() => {
         if (!profile?.specialities) return [];
@@ -74,6 +77,22 @@ const ProviderProfile = () => {
         };
         load();
     }, []);
+
+    // Prevent background scroll and stop Lenis smooth-scroll when modals are open
+    useEffect(() => {
+        const isAnyOpen = showLanguage || isEditOpen || showRate || showResolution || showReport || showPolicy || isAddWorkOpen;
+        if (isAnyOpen) {
+            document.body.style.overflow = 'hidden';
+            window.lenis?.stop();
+        } else {
+            document.body.style.overflow = 'unset';
+            window.lenis?.start();
+        }
+        return () => { 
+            document.body.style.overflow = 'unset'; 
+            window.lenis?.start();
+        };
+    }, [showLanguage, isEditOpen, showRate, showResolution, showReport, showPolicy, isAddWorkOpen]);
 
     const fetchCMS = async () => {
         try {
@@ -368,6 +387,19 @@ const ProviderProfile = () => {
                         </button>
                         <hr className="border-slate-50 mx-4" />
                         <button
+                            onClick={() => setShowLanguage(true)}
+                            className="w-full p-4 flex items-center justify-between active:bg-slate-50 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600">
+                                    <Languages size={18} />
+                                </div>
+                                <span className="text-slate-700 font-extrabold text-[15px]">Choose App Language</span>
+                            </div>
+                            <span className="text-slate-300 text-xl font-light">›</span>
+                        </button>
+                        <hr className="border-slate-50 mx-4" />
+                        <button
                             onClick={() => setShowPolicy(true)}
                             className="w-full p-4 flex items-center justify-between active:bg-slate-50 transition-colors"
                         >
@@ -550,18 +582,20 @@ const ProviderProfile = () => {
                                     </div>
                                     <div className="flex gap-2">
                                         <input
-                                            type="text" id="newSpecialityModal" placeholder="Add (e.g. Tiling)..."
+                                            type="text" 
+                                            placeholder="Add (e.g. Tiling)..."
+                                            value={newSkillModal}
+                                            onChange={(e) => setNewSkillModal(e.target.value)}
                                             className="w-full border-2 border-slate-50 bg-slate-50/50 rounded-2xl p-4 text-sm font-bold text-slate-900 outline-none focus:border-[#1E3A8A] transition-all"
                                         />
                                         <button
                                             onClick={() => {
-                                                const input = document.getElementById('newSpecialityModal');
-                                                const val = input.value.trim();
+                                                const val = newSkillModal.trim();
                                                 if (val) {
-                                                    const current = formData.specialities ? formData.specialities.split(',').map(s => s.trim()) : [];
+                                                    const current = formData.specialities ? (typeof formData.specialities === 'string' ? formData.specialities.split(',').map(s => s.trim()) : formData.specialities) : [];
                                                     current.push(val);
                                                     setFormData(prev => ({ ...prev, specialities: current.join(', ') }));
-                                                    input.value = '';
+                                                    setNewSkillModal('');
                                                 }
                                             }}
                                             className="bg-[#1E3A8A] text-white px-8 rounded-2xl font-[1000] text-sm uppercase transition-all shadow-lg active:scale-95"
@@ -812,6 +846,101 @@ const ProviderProfile = () => {
                                 </div>
                             </>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {showLanguage && (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/40 backdrop-blur-sm p-0">
+                    <div className="w-full max-w-lg bg-white rounded-t-[40px] shadow-2xl animate-in slide-in-from-bottom duration-300 flex flex-col max-h-[85vh] overflow-hidden">
+                        <div className="p-6 border-b border-slate-50 sticky top-0 bg-white z-10 shrink-0">
+                            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-slate-900 font-[1000] text-xl tracking-tight m-0">App Language</h3>
+                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1 opacity-70">Sustain local connectivity</p>
+                                </div>
+                                <button onClick={() => setShowLanguage(false)} className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all active:scale-95">
+                                    <X size={20} strokeWidth={3} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div 
+                            data-lenis-prevent
+                            className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar" 
+                            style={{ 
+                                WebkitOverflowScrolling: 'touch', 
+                                overscrollBehavior: 'contain',
+                                maxHeight: 'calc(80vh - 160px)' 
+                            }}
+                        >
+                            {[
+                                { name: 'English', native: 'English' },
+                                { name: 'Hindi', native: 'हिंदी' },
+                                { name: 'Marathi', native: 'मराठी' },
+                                { name: 'Gujarati', native: 'ગુજરાતી' },
+                                { name: 'Tamil', native: 'தமிழ்' },
+                                { name: 'Telugu', native: 'తెలుగు' },
+                                { name: 'Kannada', native: 'ಕನ್ನಡ' },
+                                { name: 'Malayalam', native: 'മലയാളം' },
+                                { name: 'Bengali', native: 'বাংলা' },
+                                { name: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
+                                { name: 'Odia', native: 'ଓଡ଼ିଆ' },
+                                { name: 'Assamese', native: 'অসমীয়া' },
+                                { name: 'Maithili', native: 'मैथिली' },
+                                { name: 'Sanskrit', native: 'संस्कृतम्' },
+                                { name: 'Urdu', native: 'اردو' },
+                                { name: 'Kashmiri', native: 'کٲشُر' },
+                                { name: 'Santali', native: 'ᱥᱟᱱᱛᱟᱲᱤ' },
+                                { name: 'Spanish', native: 'Español' },
+                                { name: 'French', native: 'Français' },
+                                { name: 'German', native: 'Deutsch' },
+                                { name: 'Japanese', native: '日本語' },
+                                { name: 'Chinese', native: '中文' },
+                                { name: 'Russian', native: 'Русский' },
+                                { name: 'Arabic', native: 'العربية' },
+                                { name: 'Portuguese', native: 'Português' },
+                                { name: 'Italian', native: 'Italiano' },
+                                { name: 'Korean', native: '한국어' },
+                                { name: 'Vietnamese', native: 'Tiếng Việt' },
+                                { name: 'Thai', native: 'ไทย' },
+                                { name: 'Turkish', native: 'Türkçe' },
+                                { name: 'Dutch', native: 'Nederlands' }
+                            ].map(lang => (
+                                <button
+                                    key={lang.name}
+                                    onClick={() => {
+                                        setSelectedLang(lang.name);
+                                        setTimeout(() => setShowLanguage(false), 300);
+                                    }}
+                                    className={`w-full p-5 rounded-2xl flex items-center justify-between transition-all duration-200 border-2 ${
+                                        selectedLang === lang.name 
+                                            ? 'bg-blue-50/50 border-blue-500 shadow-sm' 
+                                            : 'bg-white border-slate-100 hover:border-slate-200'
+                                    }`}
+                                >
+                                    <div className="text-left">
+                                        <p className={`text-[17px] font-black tracking-tight ${selectedLang === lang.name ? 'text-[#1E3A8A]' : 'text-slate-900'}`}>{lang.native}</p>
+                                        <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mt-0.5">{lang.name}</p>
+                                    </div>
+                                    {selectedLang === lang.name && (
+                                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white scale-110 shadow-lg shadow-blue-500/20">
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="p-6 border-t border-slate-50 bg-white sticky bottom-0 z-10">
+                            <button
+                                onClick={() => setShowLanguage(false)}
+                                className="w-full py-4.5 bg-slate-900 text-white rounded-2xl text-[11px] font-[1000] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
+                            >
+                                Confirm Settings
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

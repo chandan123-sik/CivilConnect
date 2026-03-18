@@ -153,7 +153,7 @@ const Home = () => {
                 createdAt: o.createdAt
             }));
 
-            const leadUpdates = (leads || []).filter(l => l.status !== 'pending').map(l => ({
+            const leadUpdates = (leads || []).filter(l => l.status !== 'pending' && l.providerId).map(l => ({
                 id: l._id,
                 status: l.status,
                 title: l.providerId?.fullName || l.serviceType || 'Service Request',
@@ -174,10 +174,10 @@ const Home = () => {
             const combined = [...orderUpdates, ...leadUpdates, ...reportUpdates].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             setUserNotifications(combined);
             
-            // Calculate unread status
+            // Calculate unread status using strict timestamp comparison
             if (combined.length > 0) {
                 const latestNotifTime = new Date(combined[0].createdAt).getTime();
-                const lastReadTime = new Date(localStorage.getItem('user_notif_last_read') || '1970-01-01T00:00:00.000Z').getTime();
+                const lastReadTime = parseInt(localStorage.getItem('user_notif_last_read_ts') || '0');
                 setHasUnread(latestNotifTime > lastReadTime);
             } else {
                 setHasUnread(false);
@@ -284,9 +284,8 @@ const Home = () => {
                                 onClick={() => {
                                     setShowNotifications(!showNotifications);
                                     if (!showNotifications) {
-                                        const now = new Date().toISOString();
-                                        setLastRead(now);
-                                        localStorage.setItem('user_notif_last_read', now);
+                                        const nowTs = Date.now().toString();
+                                        localStorage.setItem('user_notif_last_read_ts', nowTs);
                                         setHasUnread(false);
                                     }
                                 }}
@@ -497,13 +496,27 @@ const Home = () => {
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
-                                    textAlign: 'center'
+                                    textAlign: 'center',
+                                    minHeight: '190px',
+                                    justifyContent: 'center'
                                 }}
                             >
                                 <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F3F4F6', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', overflow: 'hidden' }}>
                                     {provider.profileImage ? <img src={provider.profileImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" crossOrigin="anonymous" alt={provider.fullName} /> : (provider.category === 'contractor' ? '🏗️' : '👤')}
                                 </div>
-                                <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px', fontWeight: '800', color: '#1F2937', margin: '0 0 4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <h4 style={{ 
+                                    fontFamily: "'Inter', sans-serif", 
+                                    fontSize: '14px', 
+                                    fontWeight: '800', 
+                                    color: '#1F2937', 
+                                    margin: '0 0 4px 0', 
+                                    wordBreak: 'break-word',
+                                    lineHeight: '1.2',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden'
+                                }}>
                                     {provider.fullName}
                                 </h4>
                                 <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#6B7280', margin: '0 0 12px 0', fontWeight: '500' }}>{provider.role || provider.category}</p>

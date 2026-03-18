@@ -244,10 +244,19 @@ const toggleProviderStatus = async (req, res) => {
 
 const deleteProvider = async (req, res) => {
   try {
-    await Provider.findByIdAndDelete(req.params.id);
-    return successRes(res, null, 'Provider deleted successfully');
+    const Lead = require('../../user/models/Lead');
+    const providerId = req.params.id;
+
+    // Remove all associated service requests first
+    await Lead.deleteMany({ providerId });
+
+    // Delete the provider
+    await Provider.findByIdAndDelete(providerId);
+
+    return successRes(res, null, 'Provider and all associated requests deleted successfully');
   } catch (err) {
-    return errorRes(res, 'Error deleting provider');
+    console.error('🔥 Delete Provider Error:', err);
+    return errorRes(res, 'Error deleting provider and its data');
   }
 };
 

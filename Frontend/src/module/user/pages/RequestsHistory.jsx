@@ -57,16 +57,18 @@ const RequestsHistory = () => {
             isMaterial: true
         }));
 
-        const providerRequests = leads.map(lead => ({
-            id: lead._id,
-            provider: lead.providerId?.fullName || lead.serviceType,
-            role: lead.serviceType,
-            date: new Date(lead.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-            status: lead.status.charAt(0).toUpperCase() + lead.status.slice(1),
-            price: lead.budget || 'Negotiable',
-            isMaterial: false,
-            rawDate: lead.createdAt
-        }));
+        const providerRequests = leads
+            .filter(lead => lead.providerId)
+            .map(lead => ({
+                id: lead._id,
+                provider: lead.providerId?.fullName || lead.serviceType,
+                role: lead.serviceType,
+                date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : lead.date,
+                status: lead.status ? lead.status.charAt(0).toUpperCase() + lead.status.slice(1) : lead.status,
+                price: lead.budget || 'Negotiable',
+                isMaterial: false,
+                rawDate: lead.createdAt
+            }));
 
         return [...providerRequests].sort((a, b) => new Date(b.rawDate) - new Date(a.rawDate));
     }, [leads, orders]);

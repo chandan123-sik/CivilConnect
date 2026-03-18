@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, ShieldCheck, Star, ChevronRight, LogOut, Camera, AlertCircle } from 'lucide-react';
+import { UserCircle, ShieldCheck, Star, ChevronRight, LogOut, Camera, AlertCircle, Languages } from 'lucide-react';
 import { getUserProfile, getHiringHistory, getOrders, submitFeedback, submitReport } from '../../../api/userApi';
 import { getPolicy } from '../../../api/publicApi';
 import axiosInstance from '../../../api/axiosInstance';
@@ -31,6 +31,8 @@ const Profile = () => {
     const [reports, setReports] = useState([]);
     const [reportText, setReportText] = useState('');
     const [reportSuccess, setReportSuccess] = useState(false);
+    const [showLanguage, setShowLanguage] = useState(false);
+    const [selectedLang, setSelectedLang] = useState('English');
 
     const [cmsData, setCmsData] = useState({
         policyPoints: [
@@ -102,6 +104,22 @@ const Profile = () => {
         load();
     }, []);
 
+    // Prevent background scroll and stop Lenis smoothing when modals are open
+    useEffect(() => {
+        const isAnyOpen = showLanguage || showEdit || showRate || showResolution || showReport || showPolicy;
+        if (isAnyOpen) {
+            document.body.style.overflow = 'hidden';
+            window.lenis?.stop();
+        } else {
+            document.body.style.overflow = 'unset';
+            window.lenis?.start();
+        }
+        return () => { 
+            document.body.style.overflow = 'unset'; 
+            window.lenis?.start();
+        };
+    }, [showLanguage, showEdit, showRate, showResolution, showReport, showPolicy]);
+
     const handleRateSubmit = async () => {
         try {
             await submitFeedback({ stars: rating });
@@ -156,16 +174,18 @@ const Profile = () => {
     const sentRequests = useMemo(() => {
         if (!Array.isArray(hiringHistory)) return [];
 
-        const realLeads = hiringHistory.map(lead => ({
-            id: lead._id,
-            provider: lead.providerId?.fullName || lead.serviceType,
-            role: lead.serviceType,
-            date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown',
-            status: lead.status ? lead.status.charAt(0).toUpperCase() + lead.status.slice(1) : 'Pending',
-            price: lead.budget || 'Negotiable',
-            isMaterial: false,
-            createdAt: lead.createdAt
-        }));
+        const realLeads = hiringHistory
+            .filter(lead => lead.providerId)
+            .map(lead => ({
+                id: lead._id,
+                provider: lead.providerId?.fullName || lead.serviceType,
+                role: lead.serviceType,
+                date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Unknown',
+                status: lead.status ? lead.status.charAt(0).toUpperCase() + lead.status.slice(1) : 'Pending',
+                price: lead.budget || 'Negotiable',
+                isMaterial: false,
+                createdAt: lead.createdAt
+            }));
 
         const combined = [...realLeads].sort((a, b) => {
             return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
@@ -301,6 +321,7 @@ const Profile = () => {
                 <div style={{ background: '#fff', borderRadius: '24px', overflow: 'hidden', border: '1.5px solid #F3F4FB', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
                     {[
                         { icon: <UserCircle size={18} />, label: 'Edit Profile Information', action: () => setShowEdit(true) },
+                        { icon: <Languages size={18} />, label: 'Choose App Language', action: () => setShowLanguage(true) },
                         { icon: <ShieldCheck size={18} />, label: 'Safety & Privacy Policy', action: () => setShowPolicy(true) },
                         { icon: <Star size={18} />, label: 'Rate CivilConnect App', action: () => setShowRate(true) },
                         { icon: <ShieldCheck size={18} />, label: 'Resolution Center', action: () => setShowResolution(true) },
@@ -610,6 +631,87 @@ const Profile = () => {
                                 ))}
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {showLanguage && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' }}>
+                    <div style={{ background: '#fff', width: '100%', borderRadius: '32px 32px 0 0', padding: '32px 24px', animation: 'slideUp 0.3s ease-out', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <div style={{ width: '40px', height: '4px', background: '#E5E7EB', borderRadius: '2px', margin: '0 auto 24px', flexShrink: 0 }} onClick={() => setShowLanguage(false)} />
+                        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: '900', color: '#111827', marginBottom: 8, flexShrink: 0 }}>Choose App Language</h3>
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: '#6B7280', marginBottom: 20, flexShrink: 0 }}>Select your preferred language from 30+ options.</p>
+                        
+                        <div 
+                            data-lenis-prevent
+                            style={{ 
+                                overflowY: 'auto', 
+                                flex: '1 1 auto', 
+                                maxHeight: 'calc(80vh - 180px)', 
+                                paddingBottom: 20, 
+                                WebkitOverflowScrolling: 'touch', 
+                                overscrollBehavior: 'contain' 
+                            }} 
+                            className="custom-scrollbar"
+                        >
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                                {[
+                                    { name: 'English', native: 'English' },
+                                    { name: 'Hindi', native: 'हिंदी' },
+                                    { name: 'Marathi', native: 'मराठी' },
+                                    { name: 'Gujarati', native: 'ગુજરાતી' },
+                                    { name: 'Tamil', native: 'தமிழ்' },
+                                    { name: 'Telugu', native: 'తెలుగు' },
+                                    { name: 'Kannada', native: 'ಕನ್ನಡ' },
+                                    { name: 'Malayalam', native: 'മലയാളം' },
+                                    { name: 'Bengali', native: 'বাংলা' },
+                                    { name: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
+                                    { name: 'Odia', native: 'ଓଡ଼ିଆ' },
+                                    { name: 'Assamese', native: 'অসমীয়া' },
+                                    { name: 'Maithili', native: 'मैथिली' },
+                                    { name: 'Sanskrit', native: 'संस्कृतम्' },
+                                    { name: 'Urdu', native: 'اردو' },
+                                    { name: 'Kashmiri', native: 'کٲشُر' },
+                                    { name: 'Santali', native: 'ᱥᱟᱱᱛᱟᱲᱤ' },
+                                    { name: 'Spanish', native: 'Español' },
+                                    { name: 'French', native: 'Français' },
+                                    { name: 'German', native: 'Deutsch' },
+                                    { name: 'Japanese', native: '日本語' },
+                                    { name: 'Chinese', native: '中文' },
+                                    { name: 'Russian', native: 'Русский' },
+                                    { name: 'Arabic', native: 'العربية' },
+                                    { name: 'Portuguese', native: 'Português' },
+                                    { name: 'Italian', native: 'Italiano' },
+                                    { name: 'Korean', native: '한국어' },
+                                    { name: 'Vietnamese', native: 'Tiếng Việt' },
+                                    { name: 'Thai', native: 'ไทย' },
+                                    { name: 'Turkish', native: 'Türkçe' },
+                                    { name: 'Dutch', native: 'Nederlands' }
+                                ].map(lang => (
+                                    <button
+                                        key={lang.name}
+                                        onClick={() => {
+                                            setSelectedLang(lang.name);
+                                            setTimeout(() => setShowLanguage(false), 300);
+                                        }}
+                                        style={{
+                                            width: '100%', padding: '16px 20px', borderRadius: '16px', border: '1.5px solid',
+                                            borderColor: selectedLang === lang.name ? '#7C3AED' : '#F1F5F9',
+                                            background: selectedLang === lang.name ? '#F5F3FF' : '#fff',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            transition: 'all 0.2s', cursor: 'pointer'
+                                        }}
+                                    >
+                                        <div style={{ textAlign: 'left' }}>
+                                            <p style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: selectedLang === lang.name ? '#7C3AED' : '#1F2937' }}>{lang.native}</p>
+                                            <p style={{ margin: 0, fontSize: '12px', color: '#94A3B8', fontWeight: '600' }}>{lang.name}</p>
+                                        </div>
+                                        {selectedLang === lang.name && <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#7C3AED', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>✓</div>}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <button onClick={() => setShowLanguage(false)} style={{ marginTop: 10, width: '100%', padding: '16px', borderRadius: '16px', background: '#F9FAFB', color: '#6B7280', border: 'none', fontWeight: '800', cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Close</button>
                     </div>
                 </div>
             )}

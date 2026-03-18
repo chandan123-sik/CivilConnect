@@ -17,6 +17,8 @@ const ProviderLayout = () => {
             infinite: false,
         });
 
+        window.lenis = lenis;
+
         const raf = (time) => {
             lenis.raf(time);
             requestAnimationFrame(raf);
