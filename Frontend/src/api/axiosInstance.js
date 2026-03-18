@@ -22,19 +22,23 @@ axiosInstance.interceptors.request.use(
     const isValid = (t) => t && t !== 'null' && t !== 'undefined';
 
     // Smart token selection based on request URL
+    const allTokens = [providerToken, tempToken, userToken, accessToken, adminToken].filter(t => isValid(t));
+    
     if (config.url.includes('/admin')) {
-      token = isValid(adminToken) ? adminToken : (isValid(accessToken) ? accessToken : null);
+      token = isValid(adminToken) ? adminToken : (allTokens[0] || null);
     } else if (config.url.includes('/provider') || config.url.includes('/leads/provider') || (config.url.includes('/leads') && config.method === 'patch')) {
-      // For provider routes, prefer provider token, then temp tokens (crucial for onboarding)
-      token = isValid(providerToken) ? providerToken : (isValid(tempToken) ? tempToken : (isValid(accessToken) ? accessToken : null));
+      token = isValid(providerToken) ? providerToken : (isValid(tempToken) ? tempToken : (allTokens[0] || null));
     } else {
-      // Default fallback for client/public routes
-      token = isValid(userToken) ? userToken : (isValid(tempToken) ? tempToken : (isValid(accessToken) ? accessToken : null));
+      token = allTokens[0] || null;
     }
 
     if (token) {
       config.headers['Authorization'] = `Bearer ${token.trim()}`;
     }
+
+    // DEBUG: Uncomment code below for local terminal/console troubleshooting
+    // console.log(`[Axios Request] URL: ${config.url} | Token Found: ${!!token}`);
+
     return config;
   },
   (error) => {
@@ -45,18 +49,27 @@ axiosInstance.interceptors.request.use(
 // Add a response interceptor to handle errors globally
 axiosInstance.interceptors.response.use(
   (response) => {
-    if (response.data && response.data.success !== undefined) {
-      return response.data.data !== undefined ? response.data.data : response.data;
+    // Standard unwrap for our successRes system
+    const resDto = response.data;
+    if (resDto && resDto.success) {
+        return resDto.data !== undefined ? resDto.data : resDto;
     }
-    return response.data;
+    return resDto;
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear all tokens on unauthorized
-      localStorage.removeItem('cc_admin_token');
-      localStorage.removeItem('cc_user_token');
-      localStorage.removeItem('cc_provider_token');
-      localStorage.removeItem('access_token');
+      const url = error.config?.url || '';
+      if (url.includes('/admin')) {
+          localStorage.removeItem('cc_admin_token');
+          localStorage.removeItem('cc_admin_data');
+      } else if (url.includes('/provider') || url.includes('/leads/provider')) {
+          localStorage.removeItem('cc_provider_token');
+          localStorage.removeItem('cc_provider_data');
+      } else {
+          localStorage.removeItem('cc_user_token');
+          localStorage.removeItem('cc_user_data');
+      }
+      localStorage.removeItem('access_token'); // Legacy cleanup
     }
     return Promise.reject(error.response?.data?.message || 'Something went wrong');
   }

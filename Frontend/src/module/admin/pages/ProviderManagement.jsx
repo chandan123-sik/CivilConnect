@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAllProviders, updateProviderStatus } from '../../../api/adminApi';
+import { getAllProviders, updateProviderStatus, deleteProvider } from '../../../api/adminApi';
 import { showToast } from '../../../components/Toast';
 
 // Dummy data removed for real API integration
@@ -82,6 +82,17 @@ const ProviderManagement = () => {
             fetchProviders();
         } catch (err) {
             showToast("Status update failed", "error");
+        }
+    };
+
+    const handleDeleteProvider = async (providerId) => {
+        if (!window.confirm("Are you sure you want to permanently delete this service provider? This action cannot be undone.")) return;
+        try {
+            await deleteProvider(providerId);
+            showToast("Provider deleted from database", 'success');
+            fetchProviders();
+        } catch (err) {
+            showToast("Failed to delete provider", 'error');
         }
     };
 
@@ -284,6 +295,9 @@ const ProviderManagement = () => {
                                                 </button>
                                                 <button onClick={() => handleToggleStatus(provider._id, provider.isActive)} className={`p-2 rounded-lg transition-colors ${provider.isActive ? 'text-slate-400 hover:text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-green-500 hover:bg-green-50'}`} title={provider.isActive ? "Suspend" : "Activate"}>
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                                </button>
+                                                <button onClick={() => handleDeleteProvider(provider._id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Provider">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                 </button>
                                             </div>
                                         </td>

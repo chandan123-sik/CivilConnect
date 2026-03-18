@@ -97,6 +97,8 @@ const AdminLayout = () => {
                     <button
                         onClick={() => {
                             localStorage.removeItem('cc_admin_token');
+                            localStorage.removeItem('cc_admin_data');
+                            localStorage.removeItem('cc_current_role');
                             navigate('/admin/login');
                         }}
                         className="flex items-center gap-3.5 px-4 py-3.5 w-full text-left rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all font-medium text-[13px]"

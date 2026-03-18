@@ -156,45 +156,130 @@ const getReports = async (req, res) => {
 const initiateSubscription = async (req, res) => {
   const { planId } = req.body;
   try {
-    const provider = await Provider.findById(req.user.id);
-    if (!provider) return errorRes(res, 'Provider not found');
-
+    const Razorpay = require('razorpay');
+    const Provider = require('../models/Provider');
     const Plan = require('../../admin/models/Plan');
-    const Notification = require('../../admin/models/Notification');
-    const Transaction = require('../../admin/models/Transaction');
-    
-    const plan = await Plan.findById(planId);
-    if (!plan) return errorRes(res, 'Plan not found');
 
-    // Create a dummy Transaction record to "feel real"
-    const dummyTransactionId = 'TXN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    let provider;
+    if (req.user.id && req.user.id !== 'new-user') {
+        provider = await Provider.findById(req.user.id);
+    }
+    
+    if (!provider && req.user.phone) {
+        provider = await Provider.findOne({ phone: req.user.phone });
+    }
+
+    if (!provider) return errorRes(res, 'Provider context not found. Please complete profile.', 404);
+
+    const plan = await Plan.findById(planId);
+    if (!plan) return errorRes(res, 'Plan not found', 404);
+
+    let order;
+    try {
+        const instance = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+        });
+
+        const options = {
+            amount: Math.round(plan.price * 100),
+            currency: "INR",
+            receipt: `receipt_${Date.now()}`,
+        };
+
+        order = await instance.orders.create(options);
+    } catch (rzpErr) {
+        console.warn("Razorpay Order Creation Skip:", rzpErr.message);
+        // Fallback for dev/missing keys
+        order = { id: `order_dummy_${Date.now()}`, amount: Math.round(plan.price * 100), currency: "INR" };
+    }
+
+    return successRes(res, {
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: process.env.RAZORPAY_KEY_ID,
+      providerName: provider.fullName,
+      providerEmail: provider.email || 'support@civilconnect.com',
+      providerPhone: provider.phone,
+      planName: plan.name
+    }, 'Razorpay order created');
+  } catch (error) {
+    console.error("Razorpay Order Creation Error:", error);
+    return errorRes(res, 'Failed to initiate payment. Please check your credentials.');
+  }
+};
+
+const verifyPayment = async (req, res) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planId, isDummy } = req.body;
+  const crypto = require("crypto");
+
+  try {
+    const Provider = require('../models/Provider');
+    const Plan = require('../../admin/models/Plan');
+    const Transaction = require('../../admin/models/Transaction');
+    const Notification = require('../../admin/models/Notification');
+
+    // 1. Verify Signature (Skip if isDummy for development)
+    if (!isDummy) {
+      const body = razorpay_order_id + "|" + razorpay_payment_id;
+      const expectedSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        .update(body.toString())
+        .digest("hex");
+
+      if (expectedSignature !== razorpay_signature) {
+        return errorRes(res, 'Invalid Payment Signature', 400);
+      }
+    }
+
+    // 2. Clear Database Updates
+    let provider;
+    if (req.user.id && req.user.id !== 'new-user') {
+        provider = await Provider.findById(req.user.id);
+    }
+    
+    if (!provider && req.user.phone) {
+        provider = await Provider.findOne({ phone: req.user.phone });
+    }
+
+    const plan = await Plan.findById(planId);
+
+    if (!provider || !plan) return errorRes(res, 'Entity not found. Please ensure profile is complete.', 404);
+
+    // Create a real Transaction record
     const transaction = await Transaction.create({
-        providerId: provider._id,
-        planId: plan._id,
-        transactionId: dummyTransactionId,
-        amount: plan.price,
-        paymentMethod: req.body.paymentMethod || 'UPI',
-        status: 'success'
+      providerId: provider._id,
+      planId: plan._id,
+      transactionId: razorpay_payment_id,
+      amount: plan.price,
+      paymentMethod: req.body.paymentMethod || 'Razorpay',
+      status: 'success'
     });
 
-    // Update provider status to pending and set subscriptionId
+    // Calculate expiry date
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + (plan.durationDays || 30));
+
+    // Update provider status
     provider.approvalStatus = 'pending';
     provider.subscriptionId = planId;
+    provider.subscriptionExpiry = expiry;
     provider.lastTransactionId = transaction._id;
     await provider.save();
 
-    // Create notification for Admin
+    // Notify Admin
     await Notification.create({
-      title: 'New Plan Subscription',
-      message: `${provider.fullName} has subscribed to ${plan.name}. Transaction ID: ${dummyTransactionId}`,
+      title: 'New Paid Subscription',
+      message: `${provider.fullName} has paid ₹${plan.price} for ${plan.name} via Razorpay.`,
       type: 'Approval',
       relatedId: provider._id
     });
 
-    return successRes(res, { provider, transactionId: dummyTransactionId }, 'Payment Successful. Waiting for Admin Approval.');
+    return successRes(res, { transactionId: razorpay_payment_id, provider }, 'Payment Verified & Subscription Pending Admin Approval.');
   } catch (error) {
-    console.error("Initiate Subscription Error:", error);
-    return errorRes(res, 'Subscription initiation failed');
+    console.error("Signature Verification Error:", error);
+    return errorRes(res, error.message || 'Payment verification failed', 500);
   }
 };
 
@@ -211,5 +296,6 @@ module.exports = {
   submitFeedback,
   submitReport,
   getReports,
-  initiateSubscription
+  initiateSubscription,
+  verifyPayment
 };

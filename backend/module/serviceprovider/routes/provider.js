@@ -17,7 +17,8 @@ const {
   submitFeedback,
   submitReport,
   getReports,
-  initiateSubscription
+  initiateSubscription,
+  verifyPayment
 } = require('../controllers/providerController');
 
 // All routes here require token
@@ -52,5 +53,6 @@ router.post('/feedback', submitFeedback);
 router.post('/report', submitReport);
 router.get('/report', getReports);
 router.post('/subscribe', initiateSubscription);
+router.post('/verify-payment', verifyPayment);
 
 module.exports = router;

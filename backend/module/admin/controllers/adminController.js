@@ -242,6 +242,15 @@ const toggleProviderStatus = async (req, res) => {
   } catch (err) { return errorRes(res, 'Error'); }
 };
 
+const deleteProvider = async (req, res) => {
+  try {
+    await Provider.findByIdAndDelete(req.params.id);
+    return successRes(res, null, 'Provider deleted successfully');
+  } catch (err) {
+    return errorRes(res, 'Error deleting provider');
+  }
+};
+
 const getAllLeads = async (req, res) => {
   try {
     const list = await Lead.find()
@@ -477,5 +486,6 @@ module.exports = {
   getNotifications,
   markNotificationsRead,
   getPlatformHealth,
-  getRevenueDashboard
+  getRevenueDashboard,
+  deleteProvider
 };

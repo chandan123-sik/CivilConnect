@@ -30,3 +30,4 @@ export const submitFeedback = (data) => axiosInstance.post('/provider/feedback',
 export const submitReport = (data) => axiosInstance.post('/provider/report', data);
 export const getReports = () => axiosInstance.get('/provider/report');
 export const initiateSubscription = (planId) => axiosInstance.post('/provider/subscribe', { planId });
+export const verifyPayment = (paymentData) => axiosInstance.post('/provider/verify-payment', paymentData);

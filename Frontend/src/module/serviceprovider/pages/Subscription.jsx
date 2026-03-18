@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getProviderProfile, initiateSubscription } from '../../../api/providerApi';
+import { getProviderProfile, initiateSubscription, verifyPayment } from '../../../api/providerApi';
 import { getPlans } from '../../../api/publicApi';
 import { showToast } from '../../../components/Toast';
 
@@ -45,28 +45,79 @@ const ProviderSubscription = () => {
         loadData();
     }, []);
 
-    const handleDummyPayment = async (planId) => {
+    const loadRazorpay = () => {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
+    const handleRazorpayPayment = async (planId) => {
         setPaymentProcessing(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const res = await initiateSubscription(planId);
-            if (res) {
-                const currentData = JSON.parse(localStorage.getItem('cc_provider_data') || '{}');
-                const pData = res.provider || res.data?.provider || res.data || res;
-                const updatedData = { ...currentData, ...pData };
-                // Ensure subscription expiry is parsed
-                if (pData.subscriptionExpiry) {
-                    updatedData.subscriptionExpiry = pData.subscriptionExpiry;
-                }
-                localStorage.setItem('cc_provider_data', JSON.stringify(updatedData));
-
-                setShowCheckout(null);
-                await loadData();
-                showToast(`Payment Successful! TXN: ${res.transactionId}`, 'success');
+            // 1. Load SDK
+            const isLoaded = await loadRazorpay();
+            if (!isLoaded) {
+                showToast("Razorpay SDK failed to load. Are you online?", 'error');
+                return;
             }
+
+            // 2. Create Order in Backend
+            const res = await initiateSubscription(planId);
+            const data = res.data || res;
+
+            // 3. Open Razorpay Checkout
+            const options = {
+                key: data.keyId,
+                amount: data.amount,
+                currency: data.currency,
+                name: "CivilConnect",
+                description: `Payment for ${data.planName}`,
+                image: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=200&auto=format",
+                order_id: data.orderId,
+                handler: async (response) => {
+                    try {
+                        // 4. Verify Payment in Backend
+                        const verifyRes = await verifyPayment({
+                            ...response,
+                            planId: planId
+                        });
+
+                        const cleanRes = verifyRes.data || verifyRes;
+                        
+                        // Sync status
+                        const currentData = JSON.parse(localStorage.getItem('cc_provider_data') || '{}');
+                        const updatedData = { ...currentData, approvalStatus: 'pending' };
+                        localStorage.setItem('cc_provider_data', JSON.stringify(updatedData));
+
+                        showToast(`Payment Verified Successfully! TXN: ${response.razorpay_payment_id}`, 'success');
+                        setShowCheckout(null);
+                        await loadData();
+                    } catch (err) {
+                        showToast("Verification failed. Please contact support.", 'error');
+                    }
+                },
+                prefill: {
+                    name: data.providerName,
+                    email: data.providerEmail,
+                    contact: data.providerPhone
+                },
+                theme: {
+                    color: "#1E3A8A"
+                },
+                modal: {
+                    ondismiss: () => setPaymentProcessing(false)
+                }
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
         } catch (err) {
-            showToast("Payment failed. Please try again.", 'error');
-        } finally {
+            console.error("Payment Error:", err);
+            showToast(err.response?.data?.message || "Failed to initiate payment", 'error');
             setPaymentProcessing(false);
         }
     };
@@ -225,8 +276,8 @@ const ProviderSubscription = () => {
                                 <span className="text-indigo-600 font-[1000] text-2xl">₹{showCheckout.price}</span>
                             </div>
                             <div className="space-y-3">
-                                <button onClick={() => handleDummyPayment(showCheckout._id)} disabled={paymentProcessing} className="w-full py-5 bg-[#1E3A8A] text-white rounded-[22px] font-black uppercase tracking-[0.2em] shadow-xl disabled:opacity-50">
-                                    {paymentProcessing ? 'Processing Transaction...' : 'Pay with UPI'}
+                                <button onClick={() => handleRazorpayPayment(showCheckout._id)} disabled={paymentProcessing} className="w-full py-5 bg-[#1E3A8A] text-white rounded-[22px] font-black uppercase tracking-[0.2em] shadow-xl disabled:opacity-50">
+                                    {paymentProcessing ? 'Initializing Razorpay...' : 'Pay with Razorpay'}
                                 </button>
                                 <button onClick={() => setShowCheckout(null)} className="w-full py-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest">Cancel Payment</button>
                             </div>

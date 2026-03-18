@@ -65,7 +65,7 @@ const ProviderProfile = () => {
 
     const specialtiesList = useMemo(() => {
         if (!profile?.specialities) return [];
-        return Array.isArray(profile.specialities) ? profile.specialities : [];
+        return Array.isArray(profile.specialities) ? profile.specialities.filter(s => s && s.trim()) : [];
     }, [profile]);
 
     useEffect(() => {
@@ -128,9 +128,9 @@ const ProviderProfile = () => {
 
             // Keep localStorage in sync so ProviderNavbar/SubscriptionGuard knows the real status
             const localData = JSON.parse(localStorage.getItem('cc_provider_data') || '{}');
-            localData.subscriptionExpiry = data.subscriptionExpiry;
-            localData.isSubscriptionActive = data.subscriptionId && new Date(data.subscriptionExpiry) > new Date();
-            localStorage.setItem('cc_provider_data', JSON.stringify({ ...localData, ...data }));
+            const cleanData = data.provider || data;
+            const updated = { ...localData, ...cleanData };
+            localStorage.setItem('cc_provider_data', JSON.stringify(updated));
 
         } catch (err) {
             console.error("Failed to fetch profile:", err);
@@ -255,7 +255,7 @@ const ProviderProfile = () => {
                                 Verified Expert
                             </div>
                         )}
-                        <div className="bg-amber-50 text-amber-600 text-[13px] font-bold px-4 py-1.5 rounded-full border border-amber-100 shadow-sm">⭐ {profile?.rating || '4.5'} Rating</div>
+                        <div className="bg-amber-50 text-amber-600 text-[13px] font-bold px-4 py-1.5 rounded-full border border-amber-100 shadow-sm">⭐ {(profile?.rating ?? 4.5).toFixed(1)} Rating</div>
                     </div>
                 </div>
 
@@ -263,11 +263,11 @@ const ProviderProfile = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white rounded-xl p-3 border border-slate-100 text-center shadow-sm">
                         <p className="text-slate-500 text-[12px] font-bold tracking-tight mb-0.5 opacity-80 uppercase">Experience</p>
-                        <p className="text-slate-900 font-[1000] text-[16px]">{profile?.experience} Years</p>
+                        <p className="text-slate-900 font-[1000] text-[16px]">{profile?.experience ?? 0} Years</p>
                     </div>
                     <div className="bg-white rounded-xl p-3 border border-slate-100 text-center shadow-sm">
                         <p className="text-slate-500 text-[12px] font-bold tracking-tight mb-0.5 opacity-80 uppercase">Base Price</p>
-                        <p className="text-slate-900 font-[1000] text-[16px]">{profile?.pricing}</p>
+                        <p className="text-slate-900 font-[1000] text-[16px]">{profile?.pricing || '₹0'}</p>
                     </div>
                 </div>
 
@@ -302,7 +302,9 @@ const ProviderProfile = () => {
                                 </div>
                                 <p className="text-slate-700 text-[13px] font-bold">Aadhar Card Status</p>
                             </div>
-                            <span className="text-[#15803D] font-black text-[10px] uppercase tracking-wider bg-white/50 px-2 py-1 rounded-md">✓ Verified</span>
+                            <span className={`font-black text-[10px] uppercase tracking-wider bg-white/50 px-2 py-1 rounded-md ${profile?.approvalStatus === 'approved' ? 'text-[#15803D]' : 'text-amber-600'}`}>
+                                {profile?.approvalStatus === 'approved' ? '✓ Verified' : '● Pending'}
+                            </span>
                         </div>
                         <div className="bg-[#F0FDF4] p-3 rounded-xl border border-[#DCFCE7] flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -311,7 +313,9 @@ const ProviderProfile = () => {
                                 </div>
                                 <p className="text-slate-700 text-[13px] font-bold">Police Verification</p>
                             </div>
-                            <span className="text-[#15803D] font-black text-[10px] uppercase tracking-wider bg-white/50 px-2 py-1 rounded-md">✓ Verified</span>
+                            <span className={`font-black text-[10px] uppercase tracking-wider bg-white/50 px-2 py-1 rounded-md ${profile?.approvalStatus === 'approved' ? 'text-[#15803D]' : 'text-amber-600'}`}>
+                                {profile?.approvalStatus === 'approved' ? '✓ Verified' : '● Pending'}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -419,7 +423,16 @@ const ProviderProfile = () => {
 
                 {/* ── Account Actions ── */}
                 <button
-                    onClick={() => { localStorage.clear(); window.location.href = '/'; }}
+                    onClick={() => { 
+                        localStorage.removeItem('cc_provider_token');
+                        localStorage.removeItem('cc_provider_data');
+                        localStorage.removeItem('cc_current_role');
+                        localStorage.removeItem('cc_temp_token');
+                        localStorage.removeItem('profile_complete');
+                        localStorage.removeItem('cc_provider_category');
+                        localStorage.removeItem('role_category');
+                        window.location.href = '/'; 
+                    }}
                     className="w-full py-4.5 rounded-xl bg-red-50 text-red-600 font-black text-[13px] uppercase tracking-[0.2em] border border-red-100 active:scale-95 transition-all outline-none shadow-sm mb-2"
                 >
                     Sign Out Account

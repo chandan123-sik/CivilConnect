@@ -6,7 +6,7 @@ const CreateProfessionalProfile = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         fullName: '',
-        category: localStorage.getItem('provider_category') || localStorage.getItem('role_category') || '',
+        category: localStorage.getItem('cc_provider_category') || localStorage.getItem('role_category') || '',
         experience: '', 
         about: '',
         specialities: '', 
@@ -62,16 +62,20 @@ const CreateProfessionalProfile = () => {
             });
 
             const res = await createProviderProfile(data);
+            const providerInfo = res.provider || res;
 
-            // Update localStorage
-            localStorage.setItem('cc_provider_token', res.token || localStorage.getItem('cc_provider_token') || localStorage.getItem('cc_temp_token') || localStorage.getItem('access_token'));
-            localStorage.setItem('cc_current_role', 'provider');
-            localStorage.setItem('cc_provider_data', JSON.stringify(res.user || res));
-            localStorage.setItem('profile_complete', 'true');
+            // Update localStorage with extreme robustness
+            const tokenToSave = res.token || res.data?.token || localStorage.getItem('cc_provider_token') || localStorage.getItem('cc_temp_token');
             
-            // CLEANUP: Remove temporary onboarding tokens
-            localStorage.removeItem('cc_temp_token');
-            localStorage.removeItem('access_token');
+            if (tokenToSave) {
+                localStorage.setItem('cc_provider_token', tokenToSave);
+                localStorage.setItem('cc_temp_token', tokenToSave); // Overwrite temp with the new high-privilege token
+                localStorage.setItem('access_token', tokenToSave); // Legacy fallback
+            }
+            
+            localStorage.setItem('cc_current_role', 'provider');
+            localStorage.setItem('cc_provider_data', JSON.stringify(providerInfo));
+            localStorage.setItem('profile_complete', 'true');
             
             // After profile, Go to Plans
             navigate('/auth/provider-plans');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPlans } from '../api/publicApi';
-import { initiateSubscription } from '../api/providerApi';
+import { initiateSubscription, verifyPayment } from '../api/providerApi';
 import { showToast } from '../components/Toast';
 
 const ProviderOnboardingPlans = () => {
@@ -29,19 +29,42 @@ const ProviderOnboardingPlans = () => {
     const handleDummyPayment = async (planId) => {
         setPaymentProcessing(true);
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const res = await initiateSubscription(planId);
-            if (res) {
-                // Update local storage with new subscription data immediately
-                const currentData = JSON.parse(localStorage.getItem('cc_provider_data') || '{}');
-                const updatedData = { ...currentData, ...res.provider };
-                localStorage.setItem('cc_provider_data', JSON.stringify(updatedData));
+            // 1. Initiate (Create Order)
+            const orderRes = await initiateSubscription(planId);
+            if (!orderRes || !orderRes.orderId) {
+                console.error("Order initiation failed", orderRes);
+                throw new Error(orderRes?.message || "Failed to initiate payment. Please try again.");
+            }
+            
+            // 2. Since this is dummy onboarding, simulate verification
+            const verifyRes = await verifyPayment({
+                razorpay_order_id: orderRes.orderId,
+                razorpay_payment_id: 'dummy_pay_' + Date.now(),
+                razorpay_signature: 'dummy_sig_onboarding',
+                planId: planId,
+                isDummy: true 
+            });
+
+            if (verifyRes) {
+                // The backend now returns the updated provider in 'provider' field
+                const updatedProvider = verifyRes.provider || verifyRes;
                 
-                showToast(`Onboarding Successful! Welcome ${updatedData.fullName || ''}`, 'success');
+                // Keep everything in sync
+                const currentData = JSON.parse(localStorage.getItem('cc_provider_data') || '{}');
+                const finalData = { ...currentData, ...updatedProvider };
+                
+                // IMPORTANT: Ensure isSubscriptionActive is true for the UI
+                finalData.isSubscriptionActive = true; 
+                
+                localStorage.setItem('cc_provider_data', JSON.stringify(finalData));
+                
+                showToast(`Onboarding Successful! Welcome ${finalData.fullName || ''}`, 'success');
                 navigate('/serviceprovider/home');
             }
         } catch (err) {
-            showToast("Payment failed. Please try again.", 'error');
+            console.error(err);
+            const errorMsg = err.response?.data?.message || err.message || "Payment failed. Please try again.";
+            showToast(errorMsg, 'error');
         } finally {
             setPaymentProcessing(false);
         }

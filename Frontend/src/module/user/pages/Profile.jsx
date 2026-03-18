@@ -116,7 +116,9 @@ const Profile = () => {
 
 
     const handleLogout = () => {
-        localStorage.clear();
+        localStorage.removeItem('cc_user_token');
+        localStorage.removeItem('cc_user_data');
+        localStorage.removeItem('cc_current_role');
         navigate('/');
     };
 

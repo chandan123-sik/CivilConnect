@@ -76,10 +76,11 @@ const RequireAuth = ({ children, role }) => {
 const SubscriptionGuard = ({ children }) => {
   const providerData = JSON.parse(localStorage.getItem('cc_provider_data') || '{}');
   const expiry = providerData.subscriptionExpiry;
+  const isApproved = providerData.approvalStatus === 'approved';
   
   const isExpired = !expiry || new Date(expiry) < new Date();
 
-  if (isExpired) {
+  if (isExpired || !isApproved) {
     return <Navigate to="/serviceprovider/subscription" replace />;
   }
 

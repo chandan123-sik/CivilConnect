@@ -27,7 +27,7 @@ const transactionSchema = new mongoose.Schema({
     },
     paymentMethod: {
         type: String,
-        enum: ['UPI', 'Card', 'Net Banking', 'Cash'],
+        enum: ['UPI', 'Card', 'Net Banking', 'Cash', 'Razorpay'],
         default: 'UPI'
     },
     status: {

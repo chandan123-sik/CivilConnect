@@ -16,6 +16,7 @@ const checkSubscription = async (req, res, next) => {
         const openRoutes = [
             '/profile',
             '/subscribe',
+            '/verify-payment',
             '/status'
         ];
 
@@ -25,8 +26,12 @@ const checkSubscription = async (req, res, next) => {
         }
 
         const now = new Date();
-        if (!provider.subscriptionExpiry || new Date(provider.subscriptionExpiry) < now) {
-            return errorRes(res, 'Subscription Expired. Please renew your plan to continue.', 403);
+        const isExpired = !provider.subscriptionExpiry || new Date(provider.subscriptionExpiry) < now;
+        const isNotApproved = provider.approvalStatus !== 'approved';
+
+        if (isExpired || isNotApproved) {
+            const msg = isExpired ? 'Subscription Expired. Please renew your plan.' : 'Account Pending Admin Approval. Please check back later.';
+            return errorRes(res, msg, 403);
         }
 
         next();

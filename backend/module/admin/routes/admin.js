@@ -27,7 +27,8 @@ const {
   getNotifications,
   markNotificationsRead,
   getPlatformHealth,
-  getRevenueDashboard
+  getRevenueDashboard,
+  deleteProvider
 } = require('../controllers/adminController');
 const { uploadProfile, uploadMaterial, uploadBanner } = require('../../../middleware/upload');
 
@@ -49,6 +50,7 @@ router.get('/users', getAllUsers);
 router.patch('/users/:id/status', toggleUserStatus);
 router.get('/providers', getAllProviders);
 router.patch('/providers/:id/status', toggleProviderStatus);
+router.delete('/providers/:id', deleteProvider);
 router.get('/leads', getAllLeads);
 
 // Resource Management routes (Post/Put/Delete)

@@ -12,6 +12,7 @@ export const getAllUsers = () => axiosInstance.get('/admin/users');
 
 export const getAllProviders = () => axiosInstance.get('/admin/providers');
 export const updateProviderStatus = (id, status) => axiosInstance.patch(`/admin/providers/${id}/status`, { isActive: status });
+export const deleteProvider = (id) => axiosInstance.delete(`/admin/providers/${id}`);
 export const getAllLeads = () => axiosInstance.get('/admin/leads');
 export const getAllOrders = () => axiosInstance.get('/admin/orders');
 export const updateOrderStatus = (id, data) => axiosInstance.patch(`/admin/orders/${id}`, data);

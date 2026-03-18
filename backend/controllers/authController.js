@@ -60,7 +60,13 @@ const verifyOTPHandler = async (req, res) => {
       // We pass the phone in the token payload natively via auth middleware logic if we could, 
       // but the easiest is simply adding phone to the token via raw jwt.sign.
       const jwt = require('jsonwebtoken');
-      const realTempToken = jwt.sign({ phone, isTemp: true }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const realTempToken = jwt.sign({ 
+        id: 'new-user', 
+        phone, 
+        role: 'temp', 
+        isTemp: true 
+      }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      
       return successRes(res, { isNew: true, phone, token: realTempToken }, 'OTP verified. Proceed to role selection.');
     }
 
