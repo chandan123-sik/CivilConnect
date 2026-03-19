@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Bell, Send } from 'lucide-react';
 import axiosInstance from '../../../api/axiosInstance';
+import { showToast } from '../../../components/Toast';
+
 
 const navItems = [
     { label: 'Dashboard', path: '/admin/dashboard/home', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z' },
@@ -24,6 +26,8 @@ const AdminLayout = () => {
     const [reports, setReports] = useState([]);
     const [showReports, setShowReports] = useState(false);
     const [replyTexts, setReplyTexts] = useState({});
+    const [hasNewAlert, setHasNewAlert] = useState(false);
+    const [prevPendingCount, setPrevPendingCount] = useState(0);
 
     const fetchReports = async () => {
         try {
@@ -40,14 +44,27 @@ const AdminLayout = () => {
         return () => clearInterval(interval);
     }, []);
 
+    // Effect to detect new incoming reports with persistence
+    useEffect(() => {
+        const currentPendingCount = reports.filter(r => r.status === 'Pending').length;
+        const lastSeenCount = parseInt(localStorage.getItem('admin_layout_last_seen_count') || '0');
+        
+        if (currentPendingCount > lastSeenCount) {
+            setHasNewAlert(true);
+        } else {
+            setHasNewAlert(false);
+        }
+    }, [reports]);
+
     const handleReply = async (reportId) => {
         if (!replyTexts[reportId]) return;
         try {
             await axiosInstance.patch(`/admin/reports/${reportId}/reply`, { reply: replyTexts[reportId] });
             setReplyTexts(prev => ({ ...prev, [reportId]: '' }));
+            showToast("Reply sent successfully");
             fetchReports();
         } catch (error) {
-            alert('Failed to reply');
+            showToast("Failed to reply", "error");
         }
     };
 
@@ -118,12 +135,19 @@ const AdminLayout = () => {
                         {/* Report Notifications Bell */}
                         <div className="relative">
                             <button
-                                onClick={() => setShowReports(!showReports)}
+                                onClick={() => {
+                                    setShowReports(!showReports);
+                                    if (!showReports) {
+                                        setHasNewAlert(false);
+                                        const currentPendingCount = reports.filter(r => r.status === 'Pending').length;
+                                        localStorage.setItem('admin_layout_last_seen_count', currentPendingCount.toString());
+                                    }
+                                }}
                                 className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-all relative"
                             >
                                 <Bell size={18} />
-                                {hasUnread && (
-                                    <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-red-500 ring-4 ring-slate-50" />
+                                {hasNewAlert && (
+                                    <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-red-500 ring-4 ring-slate-50 animate-pulse" />
                                 )}
                             </button>
 

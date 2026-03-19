@@ -397,6 +397,19 @@ const getPlatformHealth = async (req, res) => {
     return successRes(res, data);
   } catch (err) { return errorRes(res, 'Health Error'); }
 };
+const deleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    // Clean up associated data if necessary (e.g. leads)
+    await Lead.deleteMany({ userId });
+    await User.findByIdAndDelete(userId);
+    return successRes(res, null, 'User account permanently deleted');
+  } catch (err) {
+    console.error('🔥 Delete User Error:', err);
+    return errorRes(res, 'Error deleting user account');
+  }
+};
+
 const getRevenueDashboard = async (req, res) => {
   const { filter = 'month' } = req.query;
   try {
@@ -496,5 +509,6 @@ module.exports = {
   markNotificationsRead,
   getPlatformHealth,
   getRevenueDashboard,
-  deleteProvider
+  deleteProvider,
+  deleteUser
 };

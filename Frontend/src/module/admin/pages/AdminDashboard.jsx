@@ -1,5 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { showToast } from '../../../components/Toast';
+import { 
+    Users, 
+    ShieldCheck, 
+    Hourglass, 
+    Zap, 
+    Rocket, 
+    Package, 
+    UserPlus, 
+    AlertCircle, 
+    Globe, 
+    Database, 
+    Server, 
+    Cloud,
+    Search,
+    ChevronRight,
+    ArrowUpRight
+} from 'lucide-react';
 import { getAdminStats, getAllLeads, getAllOrders, getPendingApprovals, updateApprovalStatus, getAllReports, replyToReport, getPlatformHealth } from '../../../api/adminApi';
 
 const AdminDashboard = () => {
@@ -47,39 +65,43 @@ const AdminDashboard = () => {
     }, []);
 
     const stats = [
-        { label: 'Platform Users', value: statsData.users, sub: 'Total registered', icon: '👤', color: 'bg-emerald-50 text-emerald-600' },
-        { label: 'Total Experts', value: statsData.providers, sub: 'Verified members', icon: '💎', color: 'bg-emerald-100 text-emerald-700' },
-        { label: 'Pending Experts', value: statsData.pendingApprovals, sub: 'Needs review', icon: '⏳', color: 'bg-amber-50 text-amber-600' },
-        { label: 'Live Service Leads', value: statsData.liveLeads, sub: 'Active requests', icon: '🚀', color: 'bg-blue-50 text-blue-600' },
+        { label: 'Platform Users', value: statsData.users, sub: 'Total registered', icon: <Users size={28} color="#10B981" strokeWidth={2.5} />, color: 'bg-emerald-50 text-emerald-600' },
+        { label: 'Total Experts', value: statsData.providers, sub: 'Verified members', icon: <ShieldCheck size={28} color="#047857" strokeWidth={2.5} />, color: 'bg-emerald-100 text-emerald-700' },
+        { label: 'Pending Experts', value: statsData.pendingApprovals, sub: 'Needs review', icon: <Hourglass size={28} color="#D97706" strokeWidth={2.5} />, color: 'bg-amber-50 text-amber-600' },
+        { label: 'Live Service Leads', value: statsData.liveLeads, sub: 'Active requests', icon: <Zap size={28} color="#2563EB" strokeWidth={2.5} />, color: 'bg-blue-50 text-blue-600' },
     ];
 
     const [showNotifications, setShowNotifications] = useState(false);
     const [showAuditLog, setShowAuditLog] = useState(false);
     const [hiddenNotifIds, setHiddenNotifIds] = useState([]);
     const [showQuickAction, setShowQuickAction] = useState(false);
+    const [hasSeenNotifications, setHasSeenNotifications] = useState(true); // Default to true until checked
+    const [prevNotifCount, setPrevNotifCount] = useState(0);
     
     const [healthStatus, setHealthStatus] = useState([
-        { label: 'API Gateway', status: 'Operational', latency: '24ms', icon: '🌐', color: 'text-emerald-500', bar: 98 },
-        { label: 'Database', status: 'Operational', latency: '0ms', icon: '🗄️', color: 'text-emerald-500', bar: 100 },
-        { label: 'App Server', status: 'Operational', latency: '0ms', icon: '🖥️', color: 'text-emerald-500', bar: 100 },
-        { label: 'Storage CDN', status: 'Operational', latency: '45ms', icon: '☁️', color: 'text-emerald-500', bar: 95 },
+        { label: 'API Gateway', status: 'Operational', latency: '24ms', icon: <Globe size={22} color="#10B981" />, color: 'text-emerald-500', bar: 98 },
+        { label: 'Database', status: 'Operational', latency: '0ms', icon: <Database size={22} color="#10B981" />, color: 'text-emerald-500', bar: 100 },
+        { label: 'App Server', status: 'Operational', latency: '0ms', icon: <Server size={22} color="#10B981" />, color: 'text-emerald-500', bar: 100 },
+        { label: 'Storage CDN', status: 'Operational', latency: '45ms', icon: <Cloud size={22} color="#10B981" />, color: 'text-emerald-500', bar: 95 },
     ]);
     
     const handleApproveExpert = async (id, status = 'approved') => {
         try {
             await updateApprovalStatus(id, status);
+            showToast(`Expert ${status} successfully`);
             fetchData();
         } catch (err) {
-            alert("Action failed");
+            showToast("Action failed", "error");
         }
     };
     
     const handleResolveTicket = async (id) => {
         try {
             await replyToReport(id, 'Resolved via Dashboard Quick Action');
+            showToast("Ticket resolved successfully");
             fetchData();
         } catch (err) {
-            alert("Action failed");
+            showToast("Action failed", "error");
         }
     };
 
@@ -107,6 +129,16 @@ const AdminDashboard = () => {
         return combined.sort((a, b) => (a.isRead === b.isRead ? 0 : a.isRead ? 1 : -1));
     }, [realNotifications, realLeads, hiddenNotifIds]);
 
+    // Track new notification arrivals with persistence
+    useEffect(() => {
+        const lastSeenCount = parseInt(localStorage.getItem('admin_dashboard_last_seen_count') || '0');
+        if (notifications.length > lastSeenCount) {
+            setHasSeenNotifications(false);
+        } else {
+            setHasSeenNotifications(true);
+        }
+    }, [notifications.length]);
+
     const handleClearAllNotifs = async () => {
         try {
             const { markNotificationsRead } = await import('../../../api/adminApi');
@@ -130,7 +162,7 @@ const AdminDashboard = () => {
             user: l.clientName || 'Guest User',
             msg: `Requested: ${l.serviceType || 'Service'}`,
             time: l.createdAt ? new Date(l.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
-            icon: '🚀',
+            icon: <Rocket size={20} color="#10B981" />,
             ts: new Date(l.createdAt).getTime()
         }));
 
@@ -140,7 +172,7 @@ const AdminDashboard = () => {
             user: o.fullName || 'Purchaser',
             msg: `Order: ${o.materialName || 'Material'}`,
             time: o.createdAt ? new Date(o.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
-            icon: '📦',
+            icon: <Package size={20} color="#F59E0B" />,
             ts: new Date(o.createdAt).getTime()
         }));
 
@@ -150,7 +182,7 @@ const AdminDashboard = () => {
             user: e.fullName || 'Expert',
             msg: `Joined as: ${e.category || 'Professional'}`,
             time: e.createdAt ? new Date(e.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'New',
-            icon: '👤',
+            icon: <UserPlus size={20} color="#3B82F6" />,
             ts: new Date(e.createdAt).getTime()
         }));
 
@@ -160,7 +192,7 @@ const AdminDashboard = () => {
             user: r.senderId?.fullName || 'User',
             msg: `Alert: ${r.message?.slice(0, 25)}...`,
             time: r.createdAt ? new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Alert',
-            icon: '⚠️',
+            icon: <AlertCircle size={20} color="#EF4444" />,
             ts: new Date(r.createdAt).getTime()
         }));
 
@@ -211,11 +243,17 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-3 relative">
                         <button
-                            onClick={() => setShowNotifications(!showNotifications)}
+                            onClick={() => {
+                                setShowNotifications(!showNotifications);
+                                if (!showNotifications) {
+                                    setHasSeenNotifications(true);
+                                    localStorage.setItem('admin_dashboard_last_seen_count', notifications.length.toString());
+                                }
+                            }}
                             className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all relative ${showNotifications ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-500/20 rotate-12' : 'bg-white border border-slate-200 text-slate-400 hover:border-emerald-300'}`}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                            {notifications.some(n => !n.isRead) && (
+                            {!hasSeenNotifications && notifications.length > 0 && (
                                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-bounce" />
                             )}
                         </button>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, X, Smartphone, Home as HomeIcon, Layout, ImageIcon, Link as LinkIcon, RotateCcw, Edit2, ChevronRight } from 'lucide-react';
 import { getBanners } from '../../../api/publicApi';
 import { getAllBanners, createBanner, updateBanner, deleteBanner } from '../../../api/adminApi';
+import { showToast } from '../../../components/Toast';
+
 
 const BannerManagement = () => {
     const [activeTab, setActiveTab] = useState('home');
@@ -11,6 +13,7 @@ const BannerManagement = () => {
     const [editingBanner, setEditingBanner] = useState(null);
     const [formData, setFormData] = useState({ title: '', desc: '', image: null, link: '', position: 'home' });
     const [submitLoading, setSubmitLoading] = useState(false);
+    const [deleteConfirm, setDeleteConfirm] = useState({ show: false, id: null });
 
     useEffect(() => {
         loadBanners();
@@ -64,26 +67,33 @@ const BannerManagement = () => {
 
             if (editingBanner) {
                 await updateBanner(editingBanner._id, data);
+                showToast("Banner updated successfully");
             } else {
                 await createBanner(data);
+                showToast("Banner created successfully");
             }
             loadBanners();
             setIsModalOpen(false);
         } catch (err) {
-            alert(err.message || "Failed to save banner");
+            showToast(err.message || "Failed to save banner", "error");
         } finally {
             setSubmitLoading(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to remove this banner?')) {
-            try {
-                await deleteBanner(id);
-                loadBanners();
-            } catch (err) {
-                alert(err.message || "Failed to delete");
-            }
+    const handleDelete = (id) => {
+        setDeleteConfirm({ show: true, id });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirm.id) return;
+        try {
+            await deleteBanner(deleteConfirm.id);
+            showToast("Banner deleted successfully");
+            setDeleteConfirm({ show: false, id: null });
+            loadBanners();
+        } catch (err) {
+            showToast(err.message || "Failed to delete banner", "error");
         }
     };
 
@@ -326,6 +336,25 @@ const BannerManagement = () => {
                     </p>
                 </div>
             </div>
+
+            {/* Custom Delete Confirmation Modal */}
+            {deleteConfirm.show && (
+                <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl border border-slate-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-6">
+                            <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </div>
+                        <h2 className="text-xl font-black text-slate-800 tracking-tight mb-2">Delete Banner?</h2>
+                        <p className="text-[13px] text-slate-500 font-medium leading-relaxed mb-8 italic text-center px-4">
+                            Are you sure you want to remove this promotional banner? This action is permanent.
+                        </p>
+                        <div className="flex w-full gap-3">
+                            <button onClick={() => setDeleteConfirm({ show: false, id: null })} className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">No, Cancel</button>
+                            <button onClick={confirmDelete} className="flex-1 py-4 bg-red-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-700 shadow-lg shadow-red-500/20 active:scale-95 transition-all">Yes, Remove</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

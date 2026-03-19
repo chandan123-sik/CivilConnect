@@ -28,7 +28,8 @@ const {
   markNotificationsRead,
   getPlatformHealth,
   getRevenueDashboard,
-  deleteProvider
+  deleteProvider,
+  deleteUser
 } = require('../controllers/adminController');
 const { uploadProfile, uploadMaterial, uploadBanner } = require('../../../middleware/upload');
 
@@ -48,6 +49,7 @@ router.patch('/approvals/:id', updateApprovalStatus);
 // Management
 router.get('/users', getAllUsers);
 router.patch('/users/:id/status', toggleUserStatus);
+router.delete('/users/:id', deleteUser);
 router.get('/providers', getAllProviders);
 router.patch('/providers/:id/status', toggleProviderStatus);
 router.delete('/providers/:id', deleteProvider);

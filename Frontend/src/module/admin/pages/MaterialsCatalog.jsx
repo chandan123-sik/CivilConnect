@@ -31,15 +31,25 @@ const MaterialsCatalog = () => {
     const [processingOrderId, setProcessingOrderId] = useState(null);
     const [deliveryTimeInput, setDeliveryTimeInput] = useState('');
 
-    const loadMaterials = async () => {
-        setLoading(true);
+    // Custom UI Feedback States
+    const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+    const [deleteConfirm, setDeleteConfirm] = useState({ show: false, id: null, name: '' });
+
+    const showToast = (msg, type = 'success') => {
+        setToast({ show: true, msg, type });
+        setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
+    };
+
+    const loadMaterials = async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const res = await getMaterials();
             setMaterials(res);
         } catch (err) {
             console.error("Failed to fetch materials:", err);
+            showToast("Sync Error", "error");
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
@@ -55,12 +65,12 @@ const MaterialsCatalog = () => {
     const handleUpdateOrderStatus = async (orderId, status, deliveryTime = null) => {
         try {
             await updateOrderStatus(orderId, { status, deliveryTime });
+            showToast(`Order ${status === 'accepted' ? 'Accepted' : 'Rejected'}`);
             loadOrders();
-            // Clear inputs
             setProcessingOrderId(null);
             setDeliveryTimeInput('');
         } catch (err) {
-            alert("Failed to update order status");
+            showToast("Failed to update status", "error");
         }
     };
 
@@ -139,27 +149,35 @@ const MaterialsCatalog = () => {
 
             if (editingItem) {
                 await updateMaterial(editingItem._id, data);
+                showToast("Entry Updated Successfully");
             } else {
                 await createMaterial(data);
+                showToast("New Material Added", "success");
             }
-            loadMaterials();
+            // SILENT refresh for high performance feeling
+            loadMaterials(true); 
             setIsModalOpen(false);
         } catch (err) {
-            alert(err || "Failed to save material");
+            showToast(err?.message || "Operation failed", "error");
         } finally {
             setSubmitLoading(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to remove this material from catalog?')) {
-            try {
-                await deleteMaterial(id);
-                loadMaterials();
-            } catch (err) {
-                alert("Delete failed");
-            }
+    const confirmDelete = async () => {
+        const id = deleteConfirm.id;
+        try {
+            await deleteMaterial(id);
+            showToast("Item Removed From Catalog");
+            loadMaterials(true);
+            setDeleteConfirm({ show: false, id: null, name: '' });
+        } catch (err) {
+            showToast("Delete failed", "error");
         }
+    };
+
+    const handleDelete = (item) => {
+        setDeleteConfirm({ show: true, id: item._id || item.id, name: item.name });
     };
 
     const handleExport = () => {
@@ -293,7 +311,7 @@ const MaterialsCatalog = () => {
                                                 <button onClick={() => handleOpenModal(item)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Edit">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                                 </button>
-                                                <button onClick={() => handleDelete(item._id || item.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                                                <button onClick={() => handleDelete(item)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                 </button>
                                             </div>
@@ -499,6 +517,39 @@ const MaterialsCatalog = () => {
                             <button type="submit" form="materialForm" className="px-8 py-3 rounded-xl font-black text-[11px] text-white bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-500/20 uppercase tracking-widest active:scale-95 transition-all">
                                 {editingItem ? 'Save Changes' : 'Create Entry'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Toast Feedback */}
+            {toast.show && (
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-bottom-5 duration-300">
+                    <div className={`${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'} text-white px-8 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-md bg-opacity-90 border border-white/20`}>
+                        {toast.type === 'success' ? (
+                            <svg className="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                        ) : (
+                            <svg className="w-5 h-5 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        )}
+                        <span className="text-[13px] font-black uppercase tracking-widest">{toast.msg}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Delete Confirmation Modal */}
+            {deleteConfirm.show && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl border border-slate-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-6">
+                            <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </div>
+                        <h2 className="text-xl font-black text-slate-800 tracking-tight mb-2">Delete Material?</h2>
+                        <p className="text-[13px] text-slate-500 font-medium leading-relaxed mb-8 italic">
+                            Are you sure you want to remove <span className="text-red-500 font-black not-italic">"{deleteConfirm.name}"</span>? This action is permanent.
+                        </p>
+                        <div className="flex w-full gap-3">
+                            <button onClick={() => setDeleteConfirm({ show: false, id: null, name: '' })} className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">No, Cancel</button>
+                            <button onClick={confirmDelete} className="flex-1 py-4 bg-red-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-700 shadow-lg shadow-red-500/20 active:scale-95 transition-all">Yes, Remove</button>
                         </div>
                     </div>
                 </div>

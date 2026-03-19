@@ -17,6 +17,7 @@ export const getAllLeads = () => axiosInstance.get('/admin/leads');
 export const getAllOrders = () => axiosInstance.get('/admin/orders');
 export const updateOrderStatus = (id, data) => axiosInstance.patch(`/admin/orders/${id}`, data);
 export const updateUserStatus = (id, status) => axiosInstance.patch(`/admin/users/${id}/status`, { isActive: status });
+export const deleteUser = (id) => axiosInstance.delete(`/admin/users/${id}`);
 export const getAdminNotifications = () => axiosInstance.get('/admin/notifications');
 export const markNotificationsRead = () => axiosInstance.patch('/admin/notifications/read');
 

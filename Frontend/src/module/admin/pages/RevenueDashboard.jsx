@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getRevenueDashboard } from '../../../api/adminApi';
+import { IndianRupee, TrendingUp, Trophy, Star } from 'lucide-react';
 
 const RevenueDashboard = () => {
     const [filter, setFilter] = useState('month');
@@ -27,10 +28,10 @@ const RevenueDashboard = () => {
     if (loading && !data) return <div className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">Analyzing Financials...</div>;
 
     const stats = [
-        { label: 'Total Revenue', value: `₹${data?.totalRevenue?.toLocaleString() || 0}`, sub: 'Successful Payments', icon: '💰', color: 'bg-emerald-50 text-emerald-600' },
-        { label: 'Transactions', value: data?.totalTransactions || 0, sub: 'Volume of sales', icon: '🧾', color: 'bg-blue-50 text-blue-600' },
-        { label: 'Best Plan', value: data?.planBreakdown[0]?.planName || 'N/A', sub: 'Top selling offering', icon: '🏆', color: 'bg-amber-50 text-amber-600' },
-        { label: 'Top Contributor', value: data?.topProvider?.fullName === 'N/A' || !data?.topProvider?.fullName ? 'N/A' : data.topProvider.fullName.slice(0, 15), sub: 'Highest spend provider', icon: '💎', color: 'bg-indigo-50 text-indigo-600' },
+        { label: 'Total Revenue', value: `₹${data?.totalRevenue?.toLocaleString() || 0}`, sub: 'Successful Payments', icon: <IndianRupee size={22} color="#047857" strokeWidth={3} />, color: 'bg-emerald-50 text-emerald-600' },
+        { label: 'Transactions', value: data?.totalTransactions || 0, sub: 'Volume of sales', icon: <TrendingUp size={22} color="#2563EB" />, color: 'bg-blue-50 text-blue-600' },
+        { label: 'Best Plan', value: data?.planBreakdown[0]?.planName || 'N/A', sub: 'Top selling offering', icon: <Trophy size={22} color="#D97706" />, color: 'bg-amber-50 text-amber-600' },
+        { label: 'Top Contributor', value: data?.topProvider?.fullName === 'N/A' || !data?.topProvider?.fullName ? 'N/A' : data.topProvider.fullName.slice(0, 15), sub: 'Highest spend provider', icon: <Star size={22} color="#4F46E5" />, color: 'bg-indigo-50 text-indigo-600' },
     ];
 
     return (

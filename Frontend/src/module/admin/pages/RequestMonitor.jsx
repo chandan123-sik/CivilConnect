@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAllLeads } from '../../../api/adminApi';
+import { showToast } from '../../../components/Toast';
+
 
 const RequestMonitor = () => {
     const [requests, setRequests] = useState([]);
@@ -71,7 +73,7 @@ const RequestMonitor = () => {
     };
 
     const handleExport = () => {
-        alert("Generating Weekly Request Report...");
+        showToast("Generating Weekly Request Report...");
     };
 
     return (

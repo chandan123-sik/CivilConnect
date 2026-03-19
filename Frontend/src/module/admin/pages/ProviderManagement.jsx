@@ -41,6 +41,9 @@ const ProviderManagement = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
+    // Custom UI Patterns
+    const [deleteConfirm, setDeleteConfirm] = useState({ show: false, id: null, name: '' });
+
     // Filter Logic
     const filteredProviders = providers
         .filter(provider => {
@@ -85,11 +88,16 @@ const ProviderManagement = () => {
         }
     };
 
-    const handleDeleteProvider = async (providerId) => {
-        if (!window.confirm("Are you sure you want to permanently delete this service provider? This action cannot be undone.")) return;
+    const handleDeleteProvider = (item) => {
+        setDeleteConfirm({ show: true, id: item._id, name: item.fullName });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirm.id) return;
         try {
-            await deleteProvider(providerId);
-            showToast("Provider deleted from database", 'success');
+            await deleteProvider(deleteConfirm.id);
+            showToast("Provider deleted permanently", 'success');
+            setDeleteConfirm({ show: false, id: null, name: '' });
             fetchProviders();
         } catch (err) {
             showToast("Failed to delete provider", 'error');
@@ -296,7 +304,7 @@ const ProviderManagement = () => {
                                                 <button onClick={() => handleToggleStatus(provider._id, provider.isActive)} className={`p-2 rounded-lg transition-colors ${provider.isActive ? 'text-slate-400 hover:text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-green-500 hover:bg-green-50'}`} title={provider.isActive ? "Suspend" : "Activate"}>
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                                 </button>
-                                                <button onClick={() => handleDeleteProvider(provider._id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Provider">
+                                                <button onClick={() => handleDeleteProvider(provider)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Provider">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                 </button>
                                             </div>
@@ -472,6 +480,25 @@ const ProviderManagement = () => {
                                 <button type="submit" className="px-6 py-2.5 rounded-xl font-bold text-[13px] text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20">Onboard Provider</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Delete Confirmation Modal */}
+            {deleteConfirm.show && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[40px] w-full max-w-sm p-8 shadow-2xl border border-slate-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-6">
+                            <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </div>
+                        <h2 className="text-xl font-black text-slate-800 tracking-tight mb-2">Delete Provider?</h2>
+                        <p className="text-[13px] text-slate-500 font-medium leading-relaxed mb-8 italic text-center px-4">
+                            Are you sure you want to permanently remove <span className="text-red-600 font-black not-italic">"{deleteConfirm.name}"</span>? This action is irreversible.
+                        </p>
+                        <div className="flex w-full gap-3">
+                            <button onClick={() => setDeleteConfirm({ show: false, id: null, name: '' })} className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">No, Cancel</button>
+                            <button onClick={confirmDelete} className="flex-1 py-4 bg-red-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-700 shadow-lg shadow-red-500/20 active:scale-95 transition-all">Yes, Remove</button>
+                        </div>
                     </div>
                 </div>
             )}
